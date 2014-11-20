@@ -1,5 +1,7 @@
 --local OneUpdateThisStamp = 0;
 local DemoMode = -1
+-- Able to cast spells that have lower than this as cooldown. Spell Queue system to maximize DPS
+local SpellCastAllowLatency = 1
 -- listing possible texts here so we can take screenshots of them using autoit
 local SpellNames = {};
 SpellNames[0] = "Templar's Verdict";
@@ -9,6 +11,7 @@ SpellNames[3] = "Exorcism";
 SpellNames[4] = "Judgment";
 SpellNames[5] = "Attack";
 SpellNames[6] = "Aquire new target";
+SpellNames[7] = "Waiting for combat";
 
 ----------------------
 -- 		FRAME SETUP
@@ -53,6 +56,24 @@ local function SignalBestAction( NewAction )
 	frame.text:SetText( "."..NewAction )
 end
 
+local function checkCombat()
+	if UnitAffectingCombat('player') then 
+		return 1
+	else
+		for i=1,GetNumRaidMembers() do
+			if UnitAffectingCombat('raid'..i) or UnitAffectingCombat('raidpet'..i) then 
+				return 1 
+			end
+		end
+		for i=1,GetNumPartyMembers() do
+			if UnitAffectingCombat('party'..i) or UnitAffectingCombat('partypet'..i) then 
+				return 1 
+			end
+		end
+	end
+	return 0
+end
+	
 local function AdviseNextBestAction()
 -- /target [@targettarget,harm,nodead,exists] [@focus,harm,nodead,exists] [@focustarget,harm,exists] [harm,nodead,exists]
 	
@@ -66,10 +87,15 @@ local function AdviseNextBestAction()
 	end
 	
 	local unit = "target";
-	local SelectedAttackSpell = SpellNames[5]
+	local SelectedAttackSpell = SpellNames[7] --this could be attack also
 	
-	if( UnitExists( unit ) == false or UnitCanAttack( "player", unit ) == false or UnitIsVisible(unit) == false ) then
-		SignalBestAction( SpellNames[6] );
+--	 print(" exists "..tostring(UnitExists( unit )).." canattack "..tostring(UnitCanAttack( "player", unit )).." visible "..tostring(UnitIsVisible(unit)).." dead "..tostring(UnitIsDeadOrGhost(unit)));
+	if( UnitExists( unit ) == false or UnitCanAttack( "player", unit ) == false or UnitIsVisible(unit) == false or UnitIsDeadOrGhost( unit ) == true ) then
+		if( InCombatLockdown() == 1 or checkCombat() = 1 ) then 
+			SignalBestAction( SpellNames[6] ); -- if we are in combat we can try to search for a new target
+		else
+			SignalBestAction( SpellNames[7] );
+		end
 		return
 	end
 	
@@ -81,7 +107,7 @@ local function AdviseNextBestAction()
 			local start, duration, enabled = GetSpellCooldown( NextSpellName )
 --			 print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." Exists "..tostring(Exists).." IsVisible "..tostring(IsVisible).." CanAttack "..tostring(CanAttack).." inRange "..tostring(inRange)..".");
 --			 print( NextSpellName );
-			if( usable == true and nomana == false and inRange == 1 and duration == 0 ) then
+			if( usable == true and nomana == false and inRange == 1 and duration <= SpellCastAllowLatency ) then
 				SelectedAttackSpell = NextSpellName
 				break
 			end

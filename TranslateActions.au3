@@ -34,7 +34,10 @@ func EventImageFound( $ImageIndex )
 	elseif( $ImageIndex == 1 ) then
 ;		Send( "5" )
 	elseif( $ImageIndex == 2 ) then
-		;/target [@targettarget,harm,nodead,exists] [@focus,harm,nodead,exists] [@focustarget,harm,exists] [harm,nodead,exists]
+;/cleartarget [dead]
+;/assist [@focus, exists]
+;/startattack
+		Send( "9" )
 	elseif( $ImageIndex == 3 ) then
 		Send( "1" )
 	elseif( $ImageIndex == 4 ) then
@@ -50,6 +53,7 @@ endfunc
 ; Anything below should be working without any changes. If not.....it's bad
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #include <Misc.au3>
+#include <Date.au3>
 
 global $ScriptIsRunning = 1
 global $ScriptIsPaused = 0
@@ -68,8 +72,8 @@ EndFunc
 	; you are right, we are not doing anything
 ;endfunc
 
-;global $dllhandle = DllOpen( "ImageSearchDLL.dll" )
-global $dllhandle = DllOpen( "debug/ImageSearchDLL.dll" )
+global $dllhandle = DllOpen( "ImageSearchDLL.dll" )
+;global $dllhandle = DllOpen( "debug/ImageSearchDLL.dll" )
 global $KeyDLL = DllOpen("user32.dll")
 
 ; wait until you alt+tab to wow window
@@ -79,7 +83,7 @@ WinWaitActive( "World of Warcraft" )
 global $MB_SYSTEMMODAL = 4096
 global $SkipSearchOnColor = 0x01000000
 global $colorTolerance = 1
-global $ColorToleranceFaultsAccepted = 1
+global $ColorToleranceFaultsAccepted = 4
 global $ExitAfterNMatchesFound = 1
 
 ; only monitor the part of the window where our addon is putting out text
@@ -88,16 +92,20 @@ FindAndSetNBSWindowPosition()
 
 ;loop until the end of days
 if( $StartX <> 0 and $StartY <> 0 ) then
+	local $LastActionCheckStamp = _Date_Time_GetTickCount( )
 	; monitor that part of the screen and check if something changed. If it did, than we take actions 
 	while( $ScriptIsRunning == 1 )
 ;		If ( _IsPressed( $KeyToAllowScriptToTakeActionsHex, $KeyDLL ) or _IsPressed( $KeyToAllowScriptToTakeActionsHex2, $KeyDLL ) )Then
+			local $TickNow = _Date_Time_GetTickCount( )
 			; continuesly take screenshots
 			DllCall( $dllhandle,"str","TakeScreenshot","int",$StartX,"int",$StartY,"int",$StartX + $EndX + 1,"int",$StartY + $EndY + 1)
 			; quick check if we need to check for specific actions
 			local $result = DllCall( $dllhandle,"str","IsAnythingChanced","int", 0,"int", 0,"int",$EndX,"int",$EndY)
-			if( GetResCount( $result ) > 0 ) then
+			if( GetResCount( $result ) > 0 or $TickNow - $LastActionCheckStamp > 1000 ) then
 ;				MsgBox( $MB_SYSTEMMODAL, "", "change detected" )
 				InvestigateNextActionToBeTaken()
+				; this is required in case we get CC and can't press the "action" when it was signaled
+				$LastActionCheckStamp = $TickNow
 			endif
 ;		endif
 	wend
@@ -139,7 +147,7 @@ func FindAndSetNBSWindowPosition()
 		$EndY = Int(Number($array[2]))
 		; number of pixels should be small as possible to avoid CPU overload
 		$EndX = $ImagePixelCount
-;		MsgBox( $MB_SYSTEMMODAL, "", "found at " & $StartX & " " & $StartY )
+		MsgBox( $MB_SYSTEMMODAL, "", "found Resync.bmp at " & $StartX & " " & $StartY )
 ;		MsgBox( $MB_SYSTEMMODAL, "", "search width & height " & $EndX & " " & $EndY )
 	else
 		MsgBox( $MB_SYSTEMMODAL, "", "Could not find sync location! Make sure Resync.bmp is generated for this WOW resolution " )
