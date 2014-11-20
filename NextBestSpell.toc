@@ -1,0 +1,7 @@
+## Interface: 60000 
+## Title: NextBestSpell
+## Version: 1.0.0
+## Notes: Auto update your macros to cast the next best spell
+## Author: Tudi
+## SavedVariablesPerCharacter: NextBestSpellSavedMacros
+NextBestSpell.lua
