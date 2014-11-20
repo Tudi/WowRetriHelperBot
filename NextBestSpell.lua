@@ -68,7 +68,7 @@ local function AdviseNextBestAction()
 	local unit = "target";
 	local SelectedAttackSpell = SpellNames[5]
 	
-	if( UnitExists( unit ) == false or UnitCanAttack( "player", unit ) == false ) then
+	if( UnitExists( unit ) == false or UnitCanAttack( "player", unit ) == false or UnitIsVisible(unit) == false ) then
 		SignalBestAction( SpellNames[6] );
 		return
 	end
@@ -77,11 +77,11 @@ local function AdviseNextBestAction()
 		local NextSpellName = SpellNames[ N ];
 		if( NextSpellName ~= nil ) then
 			local usable, nomana = IsUsableSpell( NextSpellName );
-			local IsVisible = UnitIsVisible(unit)
 			local inRange = IsSpellInRange( NextSpellName, unit )
+			local start, duration, enabled = GetSpellCooldown( NextSpellName )
 --			 print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." Exists "..tostring(Exists).." IsVisible "..tostring(IsVisible).." CanAttack "..tostring(CanAttack).." inRange "..tostring(inRange)..".");
 --			 print( NextSpellName );
-			if( usable == true and nomana == false and IsVisible and inRange == 1 ) then
+			if( usable == true and nomana == false and inRange == 1 and duration == 0 ) then
 				SelectedAttackSpell = NextSpellName
 				break
 			end

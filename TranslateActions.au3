@@ -1,12 +1,18 @@
+Opt('MustDeclareVars', 1)
+
 ; you want to set this the same value as you used in "TakeScreenshots.au3"
 global $ImagePixelCount = 32
 
 ; Keyboard shortcut to kill this script
 HotKeySet("=", "Terminate")
+; do not take any actions unles script is set to run
+HotKeySet("-", "TogglePause")
 
 ;script will only monitor ingame actions as long as you have this key pressed ingame
-global $KeyToAllowScriptToTakeActions = Asc( "q" )
-global $KeyToAllowScriptToTakeActions2 = Asc( "Q" )
+;global $KeyToAllowScriptToTakeActions = 'q'
+;global $KeyToAllowScriptToTakeActions2 = 'Q'
+;global $KeyToAllowScriptToTakeActionsHex = Asc( $KeyToAllowScriptToTakeActions )
+;global $KeyToAllowScriptToTakeActionsHex2 = Asc( $KeyToAllowScriptToTakeActions2 )
 
 global $MonitoredImages[7]
 $MonitoredImages[0] = "Judgement.bmp"
@@ -18,20 +24,24 @@ $MonitoredImages[5] = "CrusaderStrike.bmp"
 $MonitoredImages[6] = "Exorcism.bmp"
 
 func EventImageFound( $ImageIndex )
-;	MsgBox( $MB_SYSTEMMODAL, "", "found img " & $MonitoredImages[ $ImageIndex ] )
-	if( $ImageIndex = 0 ) then
+;	MsgBox( $MB_SYSTEMMODAL, "", "found img " & $MonitoredImages[ $ImageIndex ] & " at index " & $ImageIndex )
+	if( $ScriptIsPaused <> 0 ) then
+		return
+	endif
+	
+	if( $ImageIndex == 0 ) then
 		Send( "5" )
-	elseif( $ImageIndex = 1 ) then
+	elseif( $ImageIndex == 1 ) then
 ;		Send( "5" )
-	elseif( $ImageIndex = 2 ) then
+	elseif( $ImageIndex == 2 ) then
 		;/target [@targettarget,harm,nodead,exists] [@focus,harm,nodead,exists] [@focustarget,harm,exists] [harm,nodead,exists]
-	elseif( $ImageIndex = 3 ) then
+	elseif( $ImageIndex == 3 ) then
 		Send( "1" )
-	elseif( $ImageIndex = 4 ) then
+	elseif( $ImageIndex == 4 ) then
 		Send( "2" )
-	elseif( $ImageIndex = 5 ) then
+	elseif( $ImageIndex == 5 ) then
 		Send( "3" )
-	elseif( $ImageIndex = 6 ) then
+	elseif( $ImageIndex == 6 ) then
 		Send( "4" )
 	endif
 endfunc
@@ -42,10 +52,21 @@ endfunc
 #include <Misc.au3>
 
 global $ScriptIsRunning = 1
+global $ScriptIsPaused = 0
 
 Func Terminate()
     $ScriptIsRunning = 0
 EndFunc
+
+Func TogglePause()
+    $ScriptIsPaused = 1 - $ScriptIsPaused
+EndFunc
+
+;HotKeySet( $KeyToAllowScriptToTakeActions, "EatIngameKeyUsage")
+;HotKeySet( $KeyToAllowScriptToTakeActions2, "EatIngameKeyUsage")
+;func EatIngameKeyUsage()
+	; you are right, we are not doing anything
+;endfunc
 
 ;global $dllhandle = DllOpen( "ImageSearchDLL.dll" )
 global $dllhandle = DllOpen( "debug/ImageSearchDLL.dll" )
@@ -63,14 +84,15 @@ global $ExitAfterNMatchesFound = 1
 
 ; only monitor the part of the window where our addon is putting out text
 FindAndSetNBSWindowPosition()
+;MsgBox( $MB_SYSTEMMODAL, "", " but1 " & $KeyToAllowScriptToTakeActionsHex & " but 2 " & $KeyToAllowScriptToTakeActionsHex2 )
 
 ;loop until the end of days
 if( $StartX <> 0 and $StartY <> 0 ) then
 	; monitor that part of the screen and check if something changed. If it did, than we take actions 
 	while( $ScriptIsRunning == 1 )
-;		If ( _IsPressed( $KeyToAllowScriptToTakeActions, $KeyDLL) or _IsPressed( $KeyToAllowScriptToTakeActions2, $KeyDLL) )Then
+;		If ( _IsPressed( $KeyToAllowScriptToTakeActionsHex, $KeyDLL ) or _IsPressed( $KeyToAllowScriptToTakeActionsHex2, $KeyDLL ) )Then
 			; continuesly take screenshots
-			DllCall( $dllhandle,"str","TakeScreenshot","int",$StartX,"int",$StartY,"int",$StartX + $EndX,"int",$StartY + $EndY)
+			DllCall( $dllhandle,"str","TakeScreenshot","int",$StartX,"int",$StartY,"int",$StartX + $EndX + 1,"int",$StartY + $EndY + 1)
 			; quick check if we need to check for specific actions
 			local $result = DllCall( $dllhandle,"str","IsAnythingChanced","int", 0,"int", 0,"int",$EndX,"int",$EndY)
 			if( GetResCount( $result ) > 0 ) then
@@ -87,8 +109,8 @@ DllClose( $KeyDLL )
 func InvestigateNextActionToBeTaken()
 	local $Index = 0
 	local $iMax = UBound( $MonitoredImages )
-	while( $Index < $iMax - 1 )
-;;		MsgBox( $MB_SYSTEMMODAL, "", "Check img " & $MonitoredImages[ $Index ] )
+	while( $Index < $iMax )
+;		MsgBox( $MB_SYSTEMMODAL, "", "Check img " & $MonitoredImages[ $Index ] )
 		local $result = DllCall( $dllhandle,"str","ImageSearchOnScreenshot","str",$MonitoredImages[ $Index ],"int",$SkipSearchOnColor,"int",$colorTolerance,"int",$ColorToleranceFaultsAccepted,"int",$ExitAfterNMatchesFound)
 		if( GetResCount( $result ) > 0 ) then
 			EventImageFound( $Index )
@@ -114,9 +136,9 @@ func FindAndSetNBSWindowPosition()
 		$result = DllCall( $dllhandle,"str","GetImageSize","str","Resync.bmp")
 		$array = StringSplit($result[0],"|")
 		$EndX = Int(Number($array[1]))
-		$EndY = Int(Number($array[2])) + 1
+		$EndY = Int(Number($array[2]))
 		; number of pixels should be small as possible to avoid CPU overload
-		$EndX = $ImagePixelCount + 1
+		$EndX = $ImagePixelCount
 ;		MsgBox( $MB_SYSTEMMODAL, "", "found at " & $StartX & " " & $StartY )
 ;		MsgBox( $MB_SYSTEMMODAL, "", "search width & height " & $EndX & " " & $EndY )
 	else
