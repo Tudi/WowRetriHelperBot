@@ -13,3 +13,19 @@ Install :
 - make sure you have the "NextBestSpell" addon enabled
 - after login .. character ingame.... start "TranslateActions.au3"
 - hold button "q" for automatic action taking
+
+
+Setup :
+This is only required if default setup is not working for you
+- login ingame
+- make sure "NextBestSpell" addon is running
+- start addon demo mode by typing ingame chat message : "/nbs demo". If you did it right than the "textwindow" should cycle available text messages
+- open "TakeScreenshots.au3"
+- make sure $IsFirstRun = 1
+- start "TakeScreenshots.au3"
+- alt tab back to game so it can take 1 screenshot of your whole game window. Image name is probably "Screenshot_0000_2000_2000.bmp"
+- open "paint" and cut out something that looks like provided "Resync.bmp". Make sure edges only contain the "gray color" + "you included the dot"
+- save your new "Resync.bmp" as 24bit color bmp 
+- $IsFirstRun = 0
+- start "TakeScreenshots.au3"
+- alt tab back to game, wait for "TakeScreenshots.au3" to say he is done taking screenshots

@@ -1,8 +1,17 @@
+; In case you did not do it yet : set $IsFirstRun = 1, take a full screenshot of your ingame wow so you can regenerate "Resync.bmp"
+; If you have a valid "Resync.bmp" than set $IsFirstRun = 1 and generate images you will search later
 $IsFirstRun = 0
+
+;The minimum pixel count for image width so you can search for images without confusing them. Maybe even 2 characters are enough if you do not have too many actions ?
+;$ImagePixelCount = 12 * 17
+$ImagePixelCount = 32
+
 global $MB_SYSTEMMODAL = 4096
 
+; wait until you alt+tab to wow window
 WinWaitActive( "World of Warcraft" )
 
+; these can be static. Declared them just because i was experimenting with stuff
 $SkipSearchOnColor = 0x01000000
 $colorTolerance = 1
 $ColorToleranceFaultsAccepted = 1
@@ -17,21 +26,53 @@ if( $IsFirstRun <> 0 ) then
 endif
 
 if( $IsFirstRun <> 1 ) then
+
+	global $EndX = 0
+	global $EndY = 0
+	$result = DllCall( $dllhandle,"str","GetImageSize","str","Resync.bmp")
+	$array = StringSplit($result[0],"|")
+	$EndX = Int(Number($array[1]))
+	$EndY = Int(Number($array[2]))
+	;MsgBox( $MB_SYSTEMMODAL, "", "TextSize " & $EndX & " " & $EndY )
+	
+	; where is our output textbox ?
+	global $StartX = 0
+	global $StartY = 0
 	$result = DllCall( $dllhandle,"str","ImageSearchOnScreenshot","str","Resync.bmp","int",$SkipSearchOnColor,"int",$colorTolerance,"int",$ColorToleranceFaultsAccepted,"int",$ExitAfterNMatchesFound)
 	HandleResult( $result )
+	
+	;Start taking screenshots
+	$EndX = $ImagePixelCount
+	$ScreenshotsRemaining = 10
+	while( $ScreenshotsRemaining > 0 )
+		DllCall( $dllhandle,"str","TakeScreenshot","int",$StartX,"int",$StartY,"int",$StartX + $EndX,"int",$StartY + $EndY)
+;		MsgBox( $MB_SYSTEMMODAL, "", "Compare region" & $StartX & "," & $StartY & " " & $EndX & "," & $EndY & " " )
+		$result = DllCall( $dllhandle,"str","IsAnythingChanced","int", 0,"int", 0,"int",$EndX,"int",$EndY)
+		$array = StringSplit( $result[0], "|" )
+		$resCount = Number( $array[1] )
+;		MsgBox( $MB_SYSTEMMODAL, "", "Could not find sync location! " & $result[0] & " " & $resCount & " " & $array[0] & " " & $array[1] & " " & $array[2] & " " & $array[3] )
+		if( $resCount > 0 ) then
+			DllCall( $dllhandle,"str","SaveScreenshot")
+			$ScreenshotsRemaining = $ScreenshotsRemaining - 1
+;			MsgBox( $MB_SYSTEMMODAL, "", "found sync location! " & $resCount )
+		endif
+	wend
+	MsgBox( $MB_SYSTEMMODAL, "", "Finished taking screenshots. You need to assign them in TranslateActions.au3" )
 endif
 
 DllClose( $dllhandle )
 
 func HandleResult( $result )
+;	MsgBox( $MB_SYSTEMMODAL, "", "result " & $result )
 	$array = StringSplit($result[0],"|")
 	$resCount = Number( $array[1] )
-	MsgBox( $MB_SYSTEMMODAL, "", "res count " & $resCount )
 	if( $resCount > 0 ) then
-		$x=Int(Number($array[2]))
-		$y=Int(Number($array[3]))
-		MouseMove( $x, $y );
-		MsgBox( $MB_SYSTEMMODAL, "", "found at " & $x & " " & $y )
+		$StartX = Int(Number($array[2]))
+		$StartY = Int(Number($array[3]))
+;		MouseMove( $StartX, $StartY );
+;		MsgBox( $MB_SYSTEMMODAL, "", "found at " & $StartX & " " & $StartY )
+	else
+;		MsgBox( $MB_SYSTEMMODAL, "", "Could not find sync location! " & $resCount )
 	endif
 endfunc
 
