@@ -13,15 +13,16 @@ WinWaitActive( "World of Warcraft" )
 
 ; these can be static. Declared them just because i was experimenting with stuff
 $SkipSearchOnColor = 0x01000000
-$colorTolerance = 1
-$ColorToleranceFaultsAccepted = 1
+$colorTolerance = 0
+$ColorToleranceFaultsAccepted = 0
 $ExitAfterNMatchesFound = 1
 
-;$dllhandle = DllOpen( "debug/ImageSearchDLL.dll" )
-$dllhandle = DllOpen( "ImageSearchDLL.dll" )
+;$dllhandle = DllOpen( "release/ImageSearchDLL.dll" )
+$dllhandle = DllOpen( "debug/ImageSearchDLL.dll" )
 
 DllCall( $dllhandle,"str","TakeScreenshot","int",0,"int",0,"int",2000,"int",2000)
 if( $IsFirstRun <> 0 ) then
+	MsgBox( $MB_SYSTEMMODAL, "", "Saving is slow. Wait a sec" )
 	DllCall( $dllhandle,"str","SaveScreenshot")
 	MsgBox( $MB_SYSTEMMODAL, "", "Screenshot saved. Cut out the new 'Resync.bmp'" )
 endif
@@ -47,8 +48,8 @@ if( $IsFirstRun <> 1 ) then
 		$EndX = $ImagePixelCount
 		$ScreenshotsRemaining = 8
 		while( $ScreenshotsRemaining > 0 )
+			;MsgBox( $MB_SYSTEMMODAL, "", "Compare region" & $StartX & "," & $StartY & " " & $EndX & "," & $EndY & " " )
 			DllCall( $dllhandle,"str","TakeScreenshot","int",$StartX,"int",$StartY,"int",$StartX + $EndX,"int",$StartY + $EndY)
-	;		MsgBox( $MB_SYSTEMMODAL, "", "Compare region" & $StartX & "," & $StartY & " " & $EndX & "," & $EndY & " " )
 			$result = DllCall( $dllhandle,"str","IsAnythingChanced","int", 0,"int", 0,"int",$EndX,"int",$EndY)
 			$array = StringSplit( $result[0], "|" )
 			$resCount = Number( $array[1] )
@@ -73,7 +74,7 @@ func HandleResult( $result )
 		$StartX = Int(Number($array[2]))
 		$StartY = Int(Number($array[3]))
 ;		MouseMove( $StartX, $StartY );
-;		MsgBox( $MB_SYSTEMMODAL, "", "found at " & $StartX & " " & $StartY )
+		MsgBox( $MB_SYSTEMMODAL, "", "found at " & $StartX & " " & $StartY )
 	else
 		MsgBox( $MB_SYSTEMMODAL, "", "Could not find sync location! " )
 	endif

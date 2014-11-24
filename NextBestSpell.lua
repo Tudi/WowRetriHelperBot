@@ -58,7 +58,7 @@ local function checkCombat()
 	if UnitAffectingCombat('player') then 
 		return 1
 	end
-[[--	if UnitAffectingCombat('player') then 
+--[[	if UnitAffectingCombat('player') then 
 		return 1
 	else
 		for i=1,GetNumRaidMembers() do
@@ -71,7 +71,7 @@ local function checkCombat()
 				return 1 
 			end
 		end
-	end --]]
+	end ]]--
 	return 0
 end
 	

@@ -72,7 +72,7 @@ EndFunc
 	; you are right, we are not doing anything
 ;endfunc
 
-global $dllhandle = DllOpen( "ImageSearchDLL.dll" )
+global $dllhandle = DllOpen( "release/ImageSearchDLL.dll" )
 ;global $dllhandle = DllOpen( "debug/ImageSearchDLL.dll" )
 global $KeyDLL = DllOpen("user32.dll")
 
@@ -82,8 +82,8 @@ WinWaitActive( "World of Warcraft" )
 ; these can be static. Declared them just because i was experimenting with stuff
 global $MB_SYSTEMMODAL = 4096
 global $SkipSearchOnColor = 0x01000000
-global $colorTolerance = 1
-global $ColorToleranceFaultsAccepted = 4
+global $colorTolerance = 0
+global $ColorToleranceFaultsAccepted = 0
 global $ExitAfterNMatchesFound = 1
 
 ; only monitor the part of the window where our addon is putting out text

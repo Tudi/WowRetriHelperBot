@@ -12,7 +12,10 @@ Install :
 - copy files into ?????\World of Warcraft\Interface\AddOns\NextBestSpell\
 - make sure you have the "NextBestSpell" addon enabled
 - after login .. character ingame.... start "TranslateActions.au3"
-- hold button "q" for automatic action taking
+
+How to check if it is working :
+- "NextBestSpell" addon should write different text based on your spell cooldowns / positioning
+- "TranslateActions.au3" should be able to find those "text" images and send button push actions accordingly
 
 
 Setup :
