@@ -1,5 +1,5 @@
 -- Able to cast spells that have lower than this as cooldown. Spell Queue system to maximize DPS
-local SpellCastAllowLatency = 1
+local SpellCastAllowLatency = 0
 -- listing possible texts here so we can take screenshots of them using autoit
 local SpellNames = {};
 SpellNames[0] = "Templar's Verdict";
@@ -10,6 +10,18 @@ SpellNames[4] = "Judgment";
 SpellNames[5] = "Attack";
 SpellNames[6] = "Aquire new target";
 SpellNames[7] = "Waiting for combat";
+
+local SpellNamesDef = {};
+SpellNamesDef[0] = "Sacred Shield";
+SpellNamesDef[1] = "Hand of Purity";
+SpellNamesDef[2] = "Divine Protection";
+
+local SpellNamesInterrupt = {};
+SpellNamesInterrupt[0] = "Fist of Justice";
+SpellNamesInterrupt[1] = "Rebuke";
+SpellNamesInterrupt[2] = "Arcane Torrent";
+local QueuedInterruptName = "none"
+local QueuedInterruptAtStamp = 0
 
 ----------------------
 -- 		FRAME SETUP
@@ -76,6 +88,7 @@ local function checkCombat()
 end
 	
 local DemoMode = -1
+local PreviousCheckHealth = 0
 local function AdviseNextBestAction()
 -- /target [@targettarget,harm,nodead,exists] [@focus,harm,nodead,exists] [@focustarget,harm,exists] [harm,nodead,exists]
 	
@@ -87,6 +100,28 @@ local function AdviseNextBestAction()
 		SignalBestAction( SpellNames[ DemoMode ] );
 		return
 	end
+
+--[[	
+	-- If we are loosing health and do not have defensive buffs. Cast Some
+	local HealthNow = UnitHealth( "player" )
+	if( HealthNow < PreviousCheckHealth ) then
+		PreviousCheckHealth = HealthNow
+		local unit = "player";
+		for N=0,2,1 do
+			local NextSpellName = SpellNamesDef[ N ];
+			if( NextSpellName ~= nil ) then
+				local usable, nomana = IsUsableSpell( NextSpellName );
+				local inRange = IsSpellInRange( NextSpellName, unit )
+				local start, duration, enabled = GetSpellCooldown( NextSpellName )
+	--			 print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." Exists "..tostring(Exists).." IsVisible "..tostring(IsVisible).." CanAttack "..tostring(CanAttack).." inRange "..tostring(inRange)..".");
+	--			 print( NextSpellName );
+				if( usable == true and nomana == false and inRange == 1 and duration <= SpellCastAllowLatency ) then
+					SelectedAttackSpell = NextSpellName
+					break
+				end
+			end
+		end
+	end ]]--
 	
 	local unit = "target";
 	local SelectedAttackSpell = SpellNames[7] --this could be attack also

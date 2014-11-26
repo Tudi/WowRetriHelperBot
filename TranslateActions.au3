@@ -2,6 +2,8 @@ Opt('MustDeclareVars', 1)
 
 ; you want to set this the same value as you used in "TakeScreenshots.au3"
 global $ImagePixelCount = 32
+; this is required to not try to casts spells 1000 times per second while silenced :(
+global $MaxFPS = 10
 
 ; Keyboard shortcut to kill this script
 HotKeySet("=", "Terminate")
@@ -86,6 +88,8 @@ global $colorTolerance = 0
 global $ColorToleranceFaultsAccepted = 0
 global $ExitAfterNMatchesFound = 1
 
+global $FrameHandleDuration = 1000 / $MaxFPS
+
 ; only monitor the part of the window where our addon is putting out text
 FindAndSetNBSWindowPosition()
 ;MsgBox( $MB_SYSTEMMODAL, "", " but1 " & $KeyToAllowScriptToTakeActionsHex & " but 2 " & $KeyToAllowScriptToTakeActionsHex2 )
@@ -106,6 +110,12 @@ if( $StartX <> 0 and $StartY <> 0 ) then
 				InvestigateNextActionToBeTaken()
 				; this is required in case we get CC and can't press the "action" when it was signaled
 				$LastActionCheckStamp = $TickNow
+			endif
+			;this is required to not overspam unusable actions
+			local $TickAtEnd = _Date_Time_GetTickCount( )
+			local $DeltaTime = $TickAtEnd - $TickNow
+			if( $DeltaTime < $FrameHandleDuration ) then
+				Sleep( $FrameHandleDuration - $DeltaTime )
 			endif
 ;		endif
 	wend
