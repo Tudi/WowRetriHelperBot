@@ -2,6 +2,8 @@
 local SpellCastAllowLatency = 0
 -- listing possible texts here so we can take screenshots of them using autoit
 local SpellNames = {};
+local CombatSpellsStartAt = 0
+local CombatSpellsEndAt = 4
 SpellNames[0] = "Templar's Verdict";
 SpellNames[1] = "Hammer of Wrath";
 SpellNames[2] = "Crusader Strike";
@@ -10,16 +12,18 @@ SpellNames[4] = "Judgment";
 SpellNames[5] = "Attack";
 SpellNames[6] = "Aquire new target";
 SpellNames[7] = "Waiting for combat";
-
-local SpellNamesDef = {};
-SpellNamesDef[0] = "Sacred Shield";
-SpellNamesDef[1] = "Hand of Purity";
-SpellNamesDef[2] = "Divine Protection";
-
-local SpellNamesInterrupt = {};
-SpellNamesInterrupt[0] = "Fist of Justice";
-SpellNamesInterrupt[1] = "Rebuke";
-SpellNamesInterrupt[2] = "Arcane Torrent";
+-- defensive spells
+local DefensiveSpellsStartAt = 8
+local DefensiveSpellsEndAt = 10
+SpellNames[8] = "Sacred Shield";
+SpellNames[9] = "Hand of Purity";
+SpellNames[10] = "Divine Protection";
+-- interrupt spells
+local InterruptSpellsStartAt = 8
+local InterruptSpellsEndAt = 10
+SpellNames[11] = "Fist of Justice";
+SpellNames[12] = "Rebuke";
+SpellNames[13] = "Arcane Torrent";
 local QueuedInterruptName = "none"
 local QueuedInterruptAtStamp = 0
 
@@ -89,6 +93,7 @@ end
 	
 local DemoMode = -1
 local PreviousCheckHealth = 0
+local HealthUpdateNextStamp = 0
 local function AdviseNextBestAction()
 -- /target [@targettarget,harm,nodead,exists] [@focus,harm,nodead,exists] [@focustarget,harm,exists] [harm,nodead,exists]
 	
@@ -104,24 +109,36 @@ local function AdviseNextBestAction()
 --[[	
 	-- If we are loosing health and do not have defensive buffs. Cast Some
 	local HealthNow = UnitHealth( "player" )
-	if( HealthNow < PreviousCheckHealth ) then
-		PreviousCheckHealth = HealthNow
-		local unit = "player";
-		for N=0,2,1 do
+	local unit = "player";
+	if( HealthNow < PreviousCheckHealth and HealthNow > 10 and UnitIsDeadOrGhost( unit ) == false ) then
+	
+		-- memorize this action for X seconds to not oscilate between decisions
+		local runtime = time();
+		if( runtime > HealthUpdateNextStamp ) then
+			PreviousCheckHealth = HealthNow
+			HealthUpdateNextStamp = runtime + 2
+		end
+		
+		for N=DefensiveSpellsStartAt,DefensiveSpellsEndAt,1 do
 			local NextSpellName = SpellNamesDef[ N ];
 			if( NextSpellName ~= nil ) then
 				local usable, nomana = IsUsableSpell( NextSpellName );
 				local inRange = IsSpellInRange( NextSpellName, unit )
 				local start, duration, enabled = GetSpellCooldown( NextSpellName )
-	--			 print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." Exists "..tostring(Exists).." IsVisible "..tostring(IsVisible).." CanAttack "..tostring(CanAttack).." inRange "..tostring(inRange)..".");
-	--			 print( NextSpellName );
+				local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitBuff( unit, NextSpellName )
+				print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." cooldown "..tostring(duration).." isactive "..tostring(HasThisAura)..".");
+--				print( NextSpellName );
 				if( usable == true and nomana == false and inRange == 1 and duration <= SpellCastAllowLatency ) then
-					SelectedAttackSpell = NextSpellName
-					break
+					SignalBestAction( NextSpellName );
+					return;
 				end
 			end
 		end
 	end ]]--
+	
+--[[
+	-- Check if our target is casting. If he is casting then we should try to queue an interrupt before cassting ends - interrupt cast time
+	]]--
 	
 	local unit = "target";
 	local SelectedAttackSpell = SpellNames[7] --this could be attack also
@@ -136,7 +153,7 @@ local function AdviseNextBestAction()
 		return
 	end
 	
-    for N=0,4,1 do
+    for N=CombatSpellsStartAt,CombatSpellsEndAt,1 do
 		local NextSpellName = SpellNames[ N ];
 		if( NextSpellName ~= nil ) then
 			local usable, nomana = IsUsableSpell( NextSpellName );
@@ -145,12 +162,11 @@ local function AdviseNextBestAction()
 --			 print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." Exists "..tostring(Exists).." IsVisible "..tostring(IsVisible).." CanAttack "..tostring(CanAttack).." inRange "..tostring(inRange)..".");
 --			 print( NextSpellName );
 			if( usable == true and nomana == false and inRange == 1 and duration <= SpellCastAllowLatency ) then
-				SelectedAttackSpell = NextSpellName
-				break
+				SignalBestAction( NextSpellName );
+				return
 			end
 		end
 	end
-	SignalBestAction( SelectedAttackSpell );
 end
 
 SLASH_TARGETROLE1 = '/NextBestSpell';

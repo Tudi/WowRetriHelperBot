@@ -3,7 +3,7 @@ Opt('MustDeclareVars', 1)
 ; you want to set this the same value as you used in "TakeScreenshots.au3"
 global $ImagePixelCount = 32
 ; this is required to not try to casts spells 1000 times per second while silenced :(
-global $MaxFPS = 10
+global $MaxFPS = 4
 
 ; Keyboard shortcut to kill this script
 HotKeySet("=", "Terminate")
