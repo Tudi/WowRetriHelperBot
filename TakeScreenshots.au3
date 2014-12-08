@@ -16,8 +16,8 @@ $colorTolerance = 0
 $ColorToleranceFaultsAccepted = 0
 $ExitAfterNMatchesFound = 1
 
-;$dllhandle = DllOpen( "release/ImageSearchDLL.dll" )
-$dllhandle = DllOpen( "debug/ImageSearchDLL.dll" )
+$dllhandle = DllOpen( "release/ImageSearchDLL.dll" )
+;$dllhandle = DllOpen( "debug/ImageSearchDLL.dll" )
 
 DllCall( $dllhandle,"str","TakeScreenshot","int",0,"int",0,"int",2000,"int",2000)
 if( $IsFirstRun <> 0 ) then
