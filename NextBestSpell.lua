@@ -7,8 +7,8 @@ local SecondPeriodCheckHealthChange = 3
 -- if we are in combat and we have nothing else to do ( enemy is too far or we are not facing him ) than shield up
 local ShieldUpWhileIdleInCombat = 1
 -- Seconds before a spell cast would end to interrupt the cast. SecondsUntilSpellCastEndToInterruptStart - SecondsUntilSpellCastEndToInterruptEnd = the timeframe until the addon can interrupt a spell. Make it large enough to work for you
-local SecondsUntilSpellCastEndToInterruptStart = 1.8	-- put as small as possible to catch all interruptable spells. Needs to be larger than SecondsUntilSpellCastEndToInterruptEnd
-local SecondsUntilSpellCastEndToInterruptEnd = 0.3	-- due to global cooldown + addon latency + game latency if you put this to a too small value the interrupt might fail and you wasted interrupt spell
+local SecondsUntilSpellCastEndToInterruptStart = 2.0	-- put as small as possible to catch all interruptable spells. Needs to be larger than SecondsUntilSpellCastEndToInterruptEnd
+local SecondsUntilSpellCastEndToInterruptEnd = 0.5	-- due to global cooldown + addon latency + game latency if you put this to a too small value the interrupt might fail and you wasted interrupt spell
 
 -- listing possible texts here so we can take screenshots of them using autoit
 local SpellNames = {};
@@ -43,12 +43,12 @@ SpellSignalPrefix[10] = "=";
 -- interrupt spells
 local InterruptSpellsStartAt = 11
 local InterruptSpellsEndAt = 13
-SpellNames[11] = "Arcane Torrent";
-SpellSignalPrefix[11] = "8";
-SpellNames[12] = "Fist of Justice";
-SpellSignalPrefix[12] = "6";
-SpellNames[13] = "Rebuke";
-SpellSignalPrefix[13] = "7";
+SpellNames[11] = "Fist of Justice";
+SpellSignalPrefix[11] = "6";
+SpellNames[12] = "Rebuke";
+SpellSignalPrefix[12] = "7";
+SpellNames[13] = "Arcane Torrent";
+SpellSignalPrefix[13] = "8";
 local QueuedInterruptName = "none"
 local QueuedInterruptAtStamp = 0
 

@@ -6,9 +6,9 @@ global $ImagePixelCount = 49
 global $MaxFPS = 4
 
 ; Keyboard shortcut to kill this script
-HotKeySet("o", "Terminate")
+HotKeySet("[", "Terminate")
 ; do not take any actions unles script is set to run
-HotKeySet("]", "TogglePause")
+HotKeySet("\", "TogglePause")
 
 global $MonitoredImages[14]
 $MonitoredImages[0] = "Judgement.bmp"
