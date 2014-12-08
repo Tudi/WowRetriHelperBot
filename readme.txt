@@ -21,7 +21,7 @@ How to check if it is working :
 Setup :
 This is only required if default setup is not working for you
 - login ingame
-- make sure "NextBestSpell" addon is running
+- make sure "NextBestSpell" addon is running. There should be a gray background text window saying "waiting for combat"
 - start addon demo mode by typing ingame chat message : "/nbs demo". If you did it right than the "textwindow" should cycle available text messages
 - open "TakeScreenshots.au3"
 - make sure $IsFirstRun = 1
@@ -32,3 +32,5 @@ This is only required if default setup is not working for you
 - $IsFirstRun = 0
 - start "TakeScreenshots.au3"
 - alt tab back to game, wait for "TakeScreenshots.au3" to say he is done taking screenshots
+- rename the images so TranslateActions.au3 can load them
+- edit "TranslateActions.au3" to map images to your keybinds

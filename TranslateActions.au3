@@ -1,22 +1,16 @@
 Opt('MustDeclareVars', 1)
 
 ; you want to set this the same value as you used in "TakeScreenshots.au3"
-global $ImagePixelCount = 32
+global $ImagePixelCount = 49
 ; this is required to not try to casts spells 1000 times per second while silenced :(
 global $MaxFPS = 4
 
 ; Keyboard shortcut to kill this script
-HotKeySet("=", "Terminate")
+HotKeySet("o", "Terminate")
 ; do not take any actions unles script is set to run
-HotKeySet("-", "TogglePause")
+HotKeySet("]", "TogglePause")
 
-;script will only monitor ingame actions as long as you have this key pressed ingame
-;global $KeyToAllowScriptToTakeActions = 'q'
-;global $KeyToAllowScriptToTakeActions2 = 'Q'
-;global $KeyToAllowScriptToTakeActionsHex = Asc( $KeyToAllowScriptToTakeActions )
-;global $KeyToAllowScriptToTakeActionsHex2 = Asc( $KeyToAllowScriptToTakeActions2 )
-
-global $MonitoredImages[7]
+global $MonitoredImages[14]
 $MonitoredImages[0] = "Judgement.bmp"
 $MonitoredImages[1] = "Attack.bmp"
 $MonitoredImages[2] = "AquireTarget.bmp"
@@ -24,6 +18,16 @@ $MonitoredImages[3] = "TemplarVerdict.bmp"
 $MonitoredImages[4] = "HammerOfJustice.bmp"
 $MonitoredImages[5] = "CrusaderStrike.bmp"
 $MonitoredImages[6] = "Exorcism.bmp"
+
+$MonitoredImages[7] = "SacredShield.bmp"
+$MonitoredImages[8] = "HandofPurity.bmp"
+$MonitoredImages[9] = "DivineProtection.bmp"
+
+$MonitoredImages[10] = "ArcaneTorrent.bmp"
+$MonitoredImages[11] = "FistofJustice.bmp"
+$MonitoredImages[12] = "Rebuke.bmp"
+
+$MonitoredImages[13] = "WaitingForCombat.bmp"
 
 func EventImageFound( $ImageIndex )
 ;	MsgBox( $MB_SYSTEMMODAL, "", "found img " & $MonitoredImages[ $ImageIndex ] & " at index " & $ImageIndex )
@@ -48,6 +52,20 @@ func EventImageFound( $ImageIndex )
 		Send( "3" )
 	elseif( $ImageIndex == 6 ) then
 		Send( "4" )
+	elseif( $ImageIndex == 7 ) then
+		Send( "0" )
+	elseif( $ImageIndex == 8 ) then
+		Send( "-" )
+	elseif( $ImageIndex == 9 ) then
+		Send( "=" )
+	elseif( $ImageIndex == 10 ) then
+		Send( "8" )
+	elseif( $ImageIndex == 11 ) then
+		Send( "6" )
+	elseif( $ImageIndex == 12 ) then
+		Send( "7" )
+	elseif( $ImageIndex == 13 ) then
+		; do nothing. Wow addon thinks our best action is to melee ( ranged ) autoswing OR simply wait until combat will happen
 	endif
 endfunc
 
@@ -67,12 +85,6 @@ EndFunc
 Func TogglePause()
     $ScriptIsPaused = 1 - $ScriptIsPaused
 EndFunc
-
-;HotKeySet( $KeyToAllowScriptToTakeActions, "EatIngameKeyUsage")
-;HotKeySet( $KeyToAllowScriptToTakeActions2, "EatIngameKeyUsage")
-;func EatIngameKeyUsage()
-	; you are right, we are not doing anything
-;endfunc
 
 global $dllhandle = DllOpen( "release/ImageSearchDLL.dll" )
 ;global $dllhandle = DllOpen( "debug/ImageSearchDLL.dll" )
@@ -99,8 +111,8 @@ if( $StartX <> 0 and $StartY <> 0 ) then
 	local $LastActionCheckStamp = _Date_Time_GetTickCount( )
 	; monitor that part of the screen and check if something changed. If it did, than we take actions 
 	while( $ScriptIsRunning == 1 )
-;		If ( _IsPressed( $KeyToAllowScriptToTakeActionsHex, $KeyDLL ) or _IsPressed( $KeyToAllowScriptToTakeActionsHex2, $KeyDLL ) )Then
 			local $TickNow = _Date_Time_GetTickCount( )
+			
 			; continuesly take screenshots
 			DllCall( $dllhandle,"str","TakeScreenshot","int",$StartX,"int",$StartY,"int",$StartX + $EndX + 1,"int",$StartY + $EndY + 1)
 			; quick check if we need to check for specific actions
@@ -111,13 +123,13 @@ if( $StartX <> 0 and $StartY <> 0 ) then
 				; this is required in case we get CC and can't press the "action" when it was signaled
 				$LastActionCheckStamp = $TickNow
 			endif
+			
 			;this is required to not overspam unusable actions
 			local $TickAtEnd = _Date_Time_GetTickCount( )
 			local $DeltaTime = $TickAtEnd - $TickNow
 			if( $DeltaTime < $FrameHandleDuration ) then
 				Sleep( $FrameHandleDuration - $DeltaTime )
 			endif
-;		endif
 	wend
 endif
 

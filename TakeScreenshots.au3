@@ -3,8 +3,7 @@
 $IsFirstRun = 0
 
 ;The minimum pixel count for image width so you can search for images without confusing them. Maybe even 2 characters are enough if you do not have too many actions ?
-;$ImagePixelCount = 12 * 17
-$ImagePixelCount = 32
+$ImagePixelCount = 49
 
 global $MB_SYSTEMMODAL = 4096
 
@@ -46,7 +45,7 @@ if( $IsFirstRun <> 1 ) then
 	if( $StartX <> 0 and $StartY <> 0 ) then
 		;Start taking screenshots
 		$EndX = $ImagePixelCount
-		$ScreenshotsRemaining = 8
+		$ScreenshotsRemaining = 14
 		while( $ScreenshotsRemaining > 0 )
 			;MsgBox( $MB_SYSTEMMODAL, "", "Compare region" & $StartX & "," & $StartY & " " & $EndX & "," & $EndY & " " )
 			DllCall( $dllhandle,"str","TakeScreenshot","int",$StartX,"int",$StartY,"int",$StartX + $EndX,"int",$StartY + $EndY)
