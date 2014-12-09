@@ -159,18 +159,31 @@ local function AdviseNextBestActionInterrupt( )
 	-- Check if our target is casting. If he is casting then we should try to queue an interrupt before cassting ends - interrupt cast time
 	local unit = "target";
 	local spell, rank, displayName, icon, startTime, endTime, isTradeSkill, castID, InterruptDeny = UnitCastingInfo( unit )
+	local cspell, csubText, ctext, ctexture, cstartTime, cendTime, cisTradeSkill, cInterruptDeny = UnitChannelInfo("unit")
+
 --	if( spell ) then
 --		local RemainingSecondsToFinishCast = endTime/1000 - GetTime()
 --		print(" Target is casting spell "..spell.." can interrupt "..tostring(InterruptDeny).." seconds until finished "..tostring(RemainingSecondsToFinishCast).." we want "..SecondsUntilSpellCastEndToInterruptStart );
 --	end
+--	if( cspell ) then
+--		local RemainingSecondsToFinishCast = cendTime/1000 - GetTime()
+--		print(" Target is casting spell "..cspell.." can interrupt "..tostring(cInterruptDeny).." seconds until finished "..tostring(RemainingSecondsToFinishCast).." we want "..SecondsUntilSpellCastEndToInterruptStart );
+--	end
+	local RemainingSecondsToFinishCast = -1
 	if( spell and InterruptDeny == false ) then
-		local RemainingSecondsToFinishCast = endTime/1000 - GetTime()
-		if( RemainingSecondsToFinishCast <= SecondsUntilSpellCastEndToInterruptStart and RemainingSecondsToFinishCast > SecondsUntilSpellCastEndToInterruptEnd ) then
+		RemainingSecondsToFinishCast = endTime/1000 - GetTime()
+	end
+	if( cspell and cInterruptDeny == false ) then
+		RemainingSecondsToFinishCast = SecondsUntilSpellCastEndToInterruptStart
+		 print("channeling : "..cspell.." cstartTime "..tostring(cstartTime).." cendTime "..tostring(cendTime).." cInterruptDeny "..tostring(cInterruptDeny).." RemainingSecondsToFinishCast "..tostring(RemainingSecondsToFinishCast)..".");
+	end
+	if( RemainingSecondsToFinishCast <= SecondsUntilSpellCastEndToInterruptStart and RemainingSecondsToFinishCast >= SecondsUntilSpellCastEndToInterruptEnd ) then
 			for N=InterruptSpellsStartAt,InterruptSpellsEndAt,1 do
 				local NextSpellName = SpellNames[ N ];
 				if( NextSpellName ~= nil ) then
-					local usable, nomana = IsUsableSpell( NextSpellName );
+					local usable, nomana = IsUsableSpell( NextSpellName )
 					local inRange = IsSpellInRange( NextSpellName, unit )
+--					local inRange2 = UnitInRange( unit )	--40 yards range check, should be the same as spell in range, only that AOE spells have radius and not range
 					local start, duration, enabled = GetSpellCooldown( NextSpellName )
 --					 print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inRange "..tostring(inRange).." coldown "..tostring(duration)..".");
 					if( usable == true and nomana == false and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency ) then
@@ -180,7 +193,6 @@ local function AdviseNextBestActionInterrupt( )
 					end
 				end
 			end
-		end
 	end
 	return 0
 end
