@@ -32,27 +32,37 @@ SpellNames[6] = "Aquire new target";
 SpellSignalPrefix[6] = "9";
 SpellNames[7] = "Waiting for combat";
 SpellSignalPrefix[7] = "+";
+SpellNames[8] = "Divine Storm";	-- will only cast if i have overlay on it giving it a 150% boost
+SpellSignalPrefix[8] = "f6";
 -- defensive spells
-local DefensiveSpellsStartAt = 8
-local DefensiveSpellsEndAt = 10
-SpellNames[8] = "Sacred Shield";
-SpellSignalPrefix[8] = "0";
-SpellNames[9] = "Hand of Purity";
-SpellSignalPrefix[9] = "-";
-SpellNames[10] = "Divine Protection";
-SpellSignalPrefix[10] = "=";
+local DefensiveSpellsStartAt = 20
+local DefensiveSpellsEndAt = 22
+SpellNames[20] = "Sacred Shield";
+SpellSignalPrefix[20] = "0";
+SpellNames[21] = "Hand of Purity";
+SpellSignalPrefix[21] = "-";
+SpellNames[22] = "Divine Protection";
+SpellSignalPrefix[22] = "=";
 -- interrupt spells
-local InterruptSpellsStartAt = 11
-local InterruptSpellsEndAt = 13
-SpellNames[11] = "Fist of Justice";
-SpellSignalPrefix[11] = "6";
-SpellNames[12] = "Rebuke";
-SpellSignalPrefix[12] = "7";
-SpellNames[13] = "Arcane Torrent";
-SpellSignalPrefix[13] = "8";
-local QueuedInterruptName = "none"
-local QueuedInterruptAtStamp = 0
-
+local InterruptSpellsStartAt = 30
+local InterruptSpellsEndAt = 32
+SpellNames[30] = "Fist of Justice";
+SpellSignalPrefix[30] = "6";
+SpellNames[31] = "Rebuke";
+SpellSignalPrefix[31] = "7";
+SpellNames[32] = "Arcane Torrent";
+SpellSignalPrefix[32] = "8";
+local ResetFightSpellsStartAt = 40
+local ResetFightSpellsEndAt = 43
+SpellNames[40] = "Divine Shield";
+SpellSignalPrefix[40] = "f7";
+SpellNames[41] = "Lay on Hands";
+SpellSignalPrefix[41] = "f8";
+SpellNames[42] = "Hand of Protection";
+SpellSignalPrefix[42] = "f9";
+SpellNames[43] = "Flash of Light";
+SpellSignalPrefix[43] = "f10";
+local MaxUsedIndexes = 43
 ----------------------
 -- 		FRAME SETUP
 ----------------------
@@ -140,7 +150,7 @@ local function AdviseNextBestActionDefensive( CantDoAnythingElseAndInCombat, uni
 					local inRange = IsSpellInRange( NextSpellName, unit )
 					local start, duration, enabled = GetSpellCooldown( NextSpellName )
 					local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( unit, NextSpellName )
---					print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inrange "..tostring(inRange).." cooldown "..tostring(duration).." isactive "..tostring(spellId)..".");
+					print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inrange "..tostring(inRange).." cooldown "..tostring(duration).." isactive "..tostring(spellId)..".");
 					if( usable == true and nomana == false and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency and spellId == nil ) then
 --						print( " advising : "..NextSpellName );
 						SignalBestAction( N );
@@ -175,8 +185,8 @@ local function AdviseNextBestActionInterrupt( )
 	local RemainingSecondsToFinishCast = -1
 	if( spell and InterruptDeny == false ) then
 		RemainingSecondsToFinishCast = endTime/1000 - GetTime()
-		if( isPlayer == 1 and endTime - startTime < DoNotInterruptPVPSpellWithCastTimeLessThan )
-			print(" player is casting instant spell "..cspell.." cast time "..tostring(endTime - startTime) );
+		if( isPlayer == 1 and endTime - startTime < DoNotInterruptPVPSpellWithCastTimeLessThan ) then
+			print(" player is casting instant spell "..cspell.." cast time "..tostring(endTime - startTime) )
 			return
 		end
 	end
@@ -225,16 +235,26 @@ local function AdviseNextBestActionCombatDPS( )
 	return 0
 end
 	
+local function AdviseRetributionPaladinSpecific()
+	-- if we are low on health than try to Divine shield / lay on hands / Hand of protection
+	-- if we are divine shielded / hand of protection, than use flash heal to heal up
+end
+
 local DemoMode = -1
 local function AdviseNextBestAction()
 -- /target [@targettarget,harm,nodead,exists] [@focus,harm,nodead,exists] [@focustarget,harm,exists] [harm,nodead,exists]
 	
 	if( DemoMode ~= -1 ) then
 		DemoMode = DemoMode + 1
-		if( SpellNames[ DemoMode ] == nil ) then
+		while( DemoMode < MaxUsedIndexes and SpellNames[ DemoMode ] == nil ) do
+			DemoMode = DemoMode + 1
+		end
+		if( DemoMode > MaxUsedIndexes ) then 
 			DemoMode = 0
 		end
-		SignalBestAction( DemoMode );
+		if( SpellNames[ DemoMode ] ~= nil ) then
+			SignalBestAction( DemoMode );
+		end
 		return
 	end
 
@@ -244,12 +264,7 @@ local function AdviseNextBestAction()
 --	 print(" exists "..tostring(UnitExists( unit )).." canattack "..tostring(UnitCanAttack( "player", unit )).." visible "..tostring(UnitIsVisible(unit)).." dead "..tostring(UnitIsDeadOrGhost(unit)));
 	if( UnitExists( unit ) == false or UnitCanAttack( "player", unit ) == false or UnitIsVisible(unit) == false or UnitIsDeadOrGhost( unit ) == true ) then
 		if( InCombatLockdown() == 1 or checkCombat() == 1 ) then 
---			SignalBestAction( 6 ) -- if we are in combat we can try to search for a new target
-			if( UnitPlayerControlled( unit ) ) then
-				TargetNearestEnemyPlayer()
-			else
-				TargetNearestEnemy()
-			end
+			SignalBestAction( 6 ) -- if we are in combat we can try to search for a new target
 		else
 			SignalBestAction( 7 )
 		end
