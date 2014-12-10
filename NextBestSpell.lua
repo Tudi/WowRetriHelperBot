@@ -9,6 +9,7 @@ local ShieldUpWhileIdleInCombat = 1
 -- Seconds before a spell cast would end to interrupt the cast. SecondsUntilSpellCastEndToInterruptStart - SecondsUntilSpellCastEndToInterruptEnd = the timeframe until the addon can interrupt a spell. Make it large enough to work for you
 local SecondsUntilSpellCastEndToInterruptStart = 2.0	-- put as small as possible to catch all interruptable spells. Needs to be larger than SecondsUntilSpellCastEndToInterruptEnd
 local SecondsUntilSpellCastEndToInterruptEnd = 0.5	-- due to global cooldown + addon latency + game latency if you put this to a too small value the interrupt might fail and you wasted interrupt spell
+local DoNotInterruptPVPSpellWithCastTimeLessThan = 2000	-- i managed to interrupt 3 instant cast spells in a row. That is definetely getting reported as cheater
 
 -- listing possible texts here so we can take screenshots of them using autoit
 local SpellNames = {};
@@ -159,7 +160,7 @@ local function AdviseNextBestActionInterrupt( )
 	-- Check if our target is casting. If he is casting then we should try to queue an interrupt before cassting ends - interrupt cast time
 	local unit = "target";
 	local spell, rank, displayName, icon, startTime, endTime, isTradeSkill, castID, InterruptDeny = UnitCastingInfo( unit )
-	local cspell, csubText, ctext, ctexture, cstartTime, cendTime, cisTradeSkill, cInterruptDeny = UnitChannelInfo("unit")
+	local cspell, csubText, ctext, ctexture, cstartTime, cendTime, cisTradeSkill, cInterruptDeny = UnitChannelInfo( unit )
 
 --	if( spell ) then
 --		local RemainingSecondsToFinishCast = endTime/1000 - GetTime()
@@ -169,13 +170,19 @@ local function AdviseNextBestActionInterrupt( )
 --		local RemainingSecondsToFinishCast = cendTime/1000 - GetTime()
 --		print(" Target is casting spell "..cspell.." can interrupt "..tostring(cInterruptDeny).." seconds until finished "..tostring(RemainingSecondsToFinishCast).." we want "..SecondsUntilSpellCastEndToInterruptStart );
 --	end
+	local isPlayer = UnitPlayerControlled( unit )
+
 	local RemainingSecondsToFinishCast = -1
 	if( spell and InterruptDeny == false ) then
 		RemainingSecondsToFinishCast = endTime/1000 - GetTime()
+		if( isPlayer == 1 and endTime - startTime < DoNotInterruptPVPSpellWithCastTimeLessThan )
+			print(" player is casting instant spell "..cspell.." cast time "..tostring(endTime - startTime) );
+			return
+		end
 	end
-	if( cspell and cInterruptDeny == false ) then
+	if( cspell ) then
 		RemainingSecondsToFinishCast = SecondsUntilSpellCastEndToInterruptStart
-		 print("channeling : "..cspell.." cstartTime "..tostring(cstartTime).." cendTime "..tostring(cendTime).." cInterruptDeny "..tostring(cInterruptDeny).." RemainingSecondsToFinishCast "..tostring(RemainingSecondsToFinishCast)..".");
+--		 print("channeling : "..cspell.." cstartTime "..tostring(cstartTime).." cendTime "..tostring(cendTime).." cInterruptDeny "..tostring(cInterruptDeny).." RemainingSecondsToFinishCast "..tostring(RemainingSecondsToFinishCast)..".");
 	end
 	if( RemainingSecondsToFinishCast <= SecondsUntilSpellCastEndToInterruptStart and RemainingSecondsToFinishCast >= SecondsUntilSpellCastEndToInterruptEnd ) then
 			for N=InterruptSpellsStartAt,InterruptSpellsEndAt,1 do
@@ -237,9 +244,14 @@ local function AdviseNextBestAction()
 --	 print(" exists "..tostring(UnitExists( unit )).." canattack "..tostring(UnitCanAttack( "player", unit )).." visible "..tostring(UnitIsVisible(unit)).." dead "..tostring(UnitIsDeadOrGhost(unit)));
 	if( UnitExists( unit ) == false or UnitCanAttack( "player", unit ) == false or UnitIsVisible(unit) == false or UnitIsDeadOrGhost( unit ) == true ) then
 		if( InCombatLockdown() == 1 or checkCombat() == 1 ) then 
-			SignalBestAction( 6 ); -- if we are in combat we can try to search for a new target
+--			SignalBestAction( 6 ) -- if we are in combat we can try to search for a new target
+			if( UnitPlayerControlled( unit ) ) then
+				TargetNearestEnemyPlayer()
+			else
+				TargetNearestEnemy()
+			end
 		else
-			SignalBestAction( 7 );
+			SignalBestAction( 7 )
 		end
 		return 1
 	end
