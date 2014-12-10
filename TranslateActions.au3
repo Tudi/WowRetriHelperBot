@@ -10,24 +10,45 @@ HotKeySet("[", "Terminate")
 ; do not take any actions unles script is set to run
 HotKeySet("\", "TogglePause")
 
-global $MonitoredImages[14]
-$MonitoredImages[0] = "Judgement.bmp"
-$MonitoredImages[1] = "Attack.bmp"
-$MonitoredImages[2] = "AquireTarget.bmp"
-$MonitoredImages[3] = "TemplarVerdict.bmp"
-$MonitoredImages[4] = "HammerOfJustice.bmp"
-$MonitoredImages[5] = "CrusaderStrike.bmp"
-$MonitoredImages[6] = "Exorcism.bmp"
-
-$MonitoredImages[7] = "SacredShield.bmp"
-$MonitoredImages[8] = "HandofPurity.bmp"
-$MonitoredImages[9] = "DivineProtection.bmp"
-
-$MonitoredImages[10] = "ArcaneTorrent.bmp"
-$MonitoredImages[11] = "FistofJustice.bmp"
-$MonitoredImages[12] = "Rebuke.bmp"
-
-$MonitoredImages[13] = "WaitingForCombat.bmp"
+global $MonitoredImages[17]
+global $SendKeyForImage[17]
+$MonitoredImages[0] = "TemplarVerdict.bmp"
+$SendKeyForImage[0] = "1"
+$MonitoredImages[1] = "HammerOfJustice.bmp"
+$SendKeyForImage[1] = "2"
+$MonitoredImages[2] = "CrusaderStrike.bmp"
+$SendKeyForImage[2] = "3"
+$MonitoredImages[3] = "Exorcism.bmp"
+$SendKeyForImage[3] = "4"
+$MonitoredImages[4] = "Judgement.bmp"
+$SendKeyForImage[4] = "5"
+$MonitoredImages[5] = "FistofJustice.bmp"
+$SendKeyForImage[5] = "6"
+$MonitoredImages[6] = "Rebuke.bmp"
+$SendKeyForImage[6] = "7"
+$MonitoredImages[7] = "ArcaneTorrent.bmp"
+$SendKeyForImage[7] = "8"
+$MonitoredImages[8] = "AquireTarget.bmp"
+$SendKeyForImage[8] = "9"
+$MonitoredImages[9] = "SacredShield.bmp"
+$SendKeyForImage[9] = "0"
+$MonitoredImages[10] = "HandofPurity.bmp"
+$SendKeyForImage[10] = "-"
+$MonitoredImages[11] = "DivineProtection.bmp"
+$SendKeyForImage[11] = "="
+$MonitoredImages[12] = "FlashOfLight.bmp"
+$SendKeyForImage[12] = "{F5}"
+$MonitoredImages[13] = "LayOnHands.bmp"
+$SendKeyForImage[13] = "{F6}"
+$MonitoredImages[14] = "HandOfProtection.bmp"
+$SendKeyForImage[14] = "{F7}"
+$MonitoredImages[15] = "DivineShield.bmp"
+$SendKeyForImage[15] = "{F8}"
+$MonitoredImages[16] = "DivineStorm.bmp"
+$SendKeyForImage[16] = '{F9}'
+;$MonitoredImages[8] = "Attack.bmp"
+;$SendKeyForImage[8] = "9"	;do nothing, LUA is waiting for cooldowns
+;$MonitoredImages[13] = "WaitingForCombat.bmp"
 
 func EventImageFound( $ImageIndex )
 ;	MsgBox( $MB_SYSTEMMODAL, "", "found img " & $MonitoredImages[ $ImageIndex ] & " at index " & $ImageIndex )
@@ -35,38 +56,7 @@ func EventImageFound( $ImageIndex )
 		return
 	endif
 	
-	if( $ImageIndex == 0 ) then
-		Send( "5" )
-	elseif( $ImageIndex == 1 ) then
-;		Send( "5" )
-	elseif( $ImageIndex == 2 ) then
-;/cleartarget [dead]
-;/assist [@focus, exists]
-;/startattack
-		Send( "9" )
-	elseif( $ImageIndex == 3 ) then
-		Send( "1" )
-	elseif( $ImageIndex == 4 ) then
-		Send( "2" )
-	elseif( $ImageIndex == 5 ) then
-		Send( "3" )
-	elseif( $ImageIndex == 6 ) then
-		Send( "4" )
-	elseif( $ImageIndex == 7 ) then
-		Send( "0" )
-	elseif( $ImageIndex == 8 ) then
-		Send( "-" )
-	elseif( $ImageIndex == 9 ) then
-		Send( "=" )
-	elseif( $ImageIndex == 10 ) then
-		Send( "8" )
-	elseif( $ImageIndex == 11 ) then
-		Send( "6" )
-	elseif( $ImageIndex == 12 ) then
-		Send( "7" )
-	elseif( $ImageIndex == 13 ) then
-		; do nothing. Wow addon thinks our best action is to melee ( ranged ) autoswing OR simply wait until combat will happen
-	endif
+	Send( $SendKeyForImage[ $ImageIndex ] );
 endfunc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -45,8 +45,8 @@ if( $IsFirstRun <> 1 ) then
 	if( $StartX <> 0 and $StartY <> 0 ) then
 		;Start taking screenshots
 		$EndX = $ImagePixelCount
-		$ScreenshotsRemaining = 14
-		while( $ScreenshotsRemaining > 0 )
+		$ScreenshotsRemaining = 18
+		while( $ScreenshotsRemaining >= 0 )
 			;MsgBox( $MB_SYSTEMMODAL, "", "Compare region" & $StartX & "," & $StartY & " " & $EndX & "," & $EndY & " " )
 			DllCall( $dllhandle,"str","TakeScreenshot","int",$StartX,"int",$StartY,"int",$StartX + $EndX,"int",$StartY + $EndY)
 			$result = DllCall( $dllhandle,"str","IsAnythingChanced","int", 0,"int", 0,"int",$EndX,"int",$EndY)

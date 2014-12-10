@@ -1,5 +1,5 @@
 -- Able to cast spells that have lower than this as cooldown. Spell Queue system to maximize DPS
-local SpellCastAllowLatency = 0
+local SpellCastAllowLatency = 0.35
 -- MAX Health PCT required for defensive buffs to be casted. 
 local MaxCharHealthPCTForDefensiveCasts = 80
 -- Number of seconds need to pass until we check our heath change again. If too large than we could die before we shield up. If too low than we might shield up even when healer is doing a fine job
@@ -7,9 +7,10 @@ local SecondPeriodCheckHealthChange = 3
 -- if we are in combat and we have nothing else to do ( enemy is too far or we are not facing him ) than shield up
 local ShieldUpWhileIdleInCombat = 1
 -- Seconds before a spell cast would end to interrupt the cast. SecondsUntilSpellCastEndToInterruptStart - SecondsUntilSpellCastEndToInterruptEnd = the timeframe until the addon can interrupt a spell. Make it large enough to work for you
-local SecondsUntilSpellCastEndToInterruptStart = 2.0	-- put as small as possible to catch all interruptable spells. Needs to be larger than SecondsUntilSpellCastEndToInterruptEnd
+local SecondsUntilSpellCastEndToInterruptStart = 1.5	-- put as small as possible to catch all interruptable spells. Needs to be larger than SecondsUntilSpellCastEndToInterruptEnd
 local SecondsUntilSpellCastEndToInterruptEnd = 0.5	-- due to global cooldown + addon latency + game latency if you put this to a too small value the interrupt might fail and you wasted interrupt spell
 local DoNotInterruptPVPSpellWithCastTimeLessThan = 2000	-- i managed to interrupt 3 instant cast spells in a row. That is definetely getting reported as cheater
+local MaxHealthPCTToCastLifeSaverSpells = 10 -- divine shield and stuff
 
 -- listing possible texts here so we can take screenshots of them using autoit
 local SpellNames = {};
@@ -32,8 +33,6 @@ SpellNames[6] = "Aquire new target";
 SpellSignalPrefix[6] = "9";
 SpellNames[7] = "Waiting for combat";
 SpellSignalPrefix[7] = "+";
-SpellNames[8] = "Divine Storm";	-- will only cast if i have overlay on it giving it a 150% boost
-SpellSignalPrefix[8] = "f6";
 -- defensive spells
 local DefensiveSpellsStartAt = 20
 local DefensiveSpellsEndAt = 22
@@ -53,16 +52,21 @@ SpellSignalPrefix[31] = "7";
 SpellNames[32] = "Arcane Torrent";
 SpellSignalPrefix[32] = "8";
 local ResetFightSpellsStartAt = 40
-local ResetFightSpellsEndAt = 43
+local ResetFightSpellsEndAt = 42
 SpellNames[40] = "Divine Shield";
-SpellSignalPrefix[40] = "f7";
+SpellSignalPrefix[40] = "f8";
 SpellNames[41] = "Lay on Hands";
-SpellSignalPrefix[41] = "f8";
+SpellSignalPrefix[41] = "f6";
 SpellNames[42] = "Hand of Protection";
-SpellSignalPrefix[42] = "f9";
+SpellSignalPrefix[42] = "f7";
+-- no category, just spells i will use for my scripts
+local IndexFlashOfLight = 43
 SpellNames[43] = "Flash of Light";
-SpellSignalPrefix[43] = "f10";
-local MaxUsedIndexes = 43
+SpellSignalPrefix[43] = "f5";
+local IndexDivineStorm = 44
+SpellNames[44] = "Divine Storm";	-- will only cast if i have overlay on it giving it a 150% boost
+SpellSignalPrefix[44] = "f9";
+local MaxUsedIndexes = 44
 ----------------------
 -- 		FRAME SETUP
 ----------------------
@@ -150,7 +154,7 @@ local function AdviseNextBestActionDefensive( CantDoAnythingElseAndInCombat, uni
 					local inRange = IsSpellInRange( NextSpellName, unit )
 					local start, duration, enabled = GetSpellCooldown( NextSpellName )
 					local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( unit, NextSpellName )
-					print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inrange "..tostring(inRange).." cooldown "..tostring(duration).." isactive "..tostring(spellId)..".");
+--					print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inrange "..tostring(inRange).." cooldown "..tostring(duration).." isactive "..tostring(spellId)..".");
 					if( usable == true and nomana == false and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency and spellId == nil ) then
 --						print( " advising : "..NextSpellName );
 						SignalBestAction( N );
@@ -216,9 +220,8 @@ end
 
 local function AdviseNextBestActionCombatDPS( )
 	local unit = "target";
-	local SelectedAttackSpell = SpellNames[7] --this could be attack also	
     for N=CombatSpellsStartAt,CombatSpellsEndAt,1 do
-		local NextSpellName = SpellNames[ N ];
+		local NextSpellName = SpellNames[ N ]
 		if( NextSpellName ~= nil ) then
 			local usable, nomana = IsUsableSpell( NextSpellName );
 			local inRange = IsSpellInRange( NextSpellName, unit )
@@ -226,7 +229,7 @@ local function AdviseNextBestActionCombatDPS( )
 --			 print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." Exists "..tostring(Exists).." IsVisible "..tostring(IsVisible).." CanAttack "..tostring(CanAttack).." inRange "..tostring(inRange)..".");
 --			 print( NextSpellName );
 			if( usable == true and nomana == false and inRange == 1 and duration <= SpellCastAllowLatency ) then
-				SignalBestAction( N );
+				SignalBestAction( N )
 				return 1
 			end
 		end
@@ -236,11 +239,112 @@ local function AdviseNextBestActionCombatDPS( )
 end
 	
 local function AdviseRetributionPaladinSpecific()
-	-- if we are low on health than try to Divine shield / lay on hands / Hand of protection
-	-- if we are divine shielded / hand of protection, than use flash heal to heal up
+	-- if we are divine shielded spam flash of light until we are fully healed
+	local unit = "player"
+	local HealthNow = UnitHealth( unit )
+	local HealthMax = UnitHealthMax( unit )
+	if( HealthNow < HealthMax ) then 
+		local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( unit, "Divine Shield" )
+--		local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( unit, "Sacred Shield" )	-- just testing if it works :P
+		if( spellId ~= nil and spellId > 0 ) then 
+			local N = IndexFlashOfLight
+			local NextSpellName = SpellNames[ N ];
+			if( NextSpellName ~= nil ) then
+				local usable, nomana = IsUsableSpell( NextSpellName )
+				local inRange = IsSpellInRange( NextSpellName, unit )
+				local start, duration, enabled = GetSpellCooldown( NextSpellName )
+--				print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inrange "..tostring(inRange).." cooldown "..tostring(duration).." isactive "..tostring(spellId)..".");
+				if( usable == true and nomana == false and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency ) then
+--					print( " advising : "..NextSpellName )
+					SignalBestAction( N )
+					return 1
+				end
+			end
+		end
+	end
+	
+	-- if we are out of fight and have low health and we have Supplication than heal up
+	local HealthPCT	= HealthNow * 100 / HealthMax
+	if( ( HealthPCT < 90 and InCombatLockdown() ~= 1 and checkCombat() ~= 1 ) or  HealthPCT < 40 ) then
+		local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( "player", "Supplication" )
+		if( spellId ~= nil and spellId > 0 ) then 
+			local N = IndexFlashOfLight
+			local NextSpellName = SpellNames[ N ];
+			if( NextSpellName ~= nil ) then
+				local usable, nomana = IsUsableSpell( NextSpellName )
+				local inRange = IsSpellInRange( NextSpellName, unit )
+				local start, duration, enabled = GetSpellCooldown( NextSpellName )
+--				print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inrange "..tostring(inRange).." cooldown "..tostring(duration).." isactive "..tostring(spellId)..".");
+				if( usable == true and nomana == false and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency ) then
+--					print( " advising : "..NextSpellName )
+					SignalBestAction( N )
+					return 1
+				end
+			end
+		end
+	end
+
+	
+	-- if divine storm is buffed than try to use it 
+	local unit = "target";
+--	 print(" exists "..tostring(UnitExists( unit )).." canattack "..tostring(UnitCanAttack( "player", unit )).." visible "..tostring(UnitIsVisible(unit)).." dead "..tostring(UnitIsDeadOrGhost(unit)));
+	if( UnitExists( unit ) == true and UnitCanAttack( "player", unit ) == true and UnitIsVisible(unit) == true and UnitIsDeadOrGhost( unit ) == false and ( InCombatLockdown() == 1 or checkCombat() == 1 ) ) then
+		local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( "player", "Divine Crusader" )
+		if( spellId ~= nil and spellId > 0 ) then 
+			local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( "player", "Final Verdict" )
+			if( spellId ~= nil and spellId > 0 ) then 
+--				print("we have Divine Crusader and final verdict");
+				local N = IndexDivineStorm
+				local NextSpellName = SpellNames[ N ];
+				if( NextSpellName ~= nil ) then
+					local usable, nomana = IsUsableSpell( NextSpellName )
+					local inRange = IsSpellInRange( "Rebuke", unit )	-- divine storm is AOE, but we want melee range
+					local start, duration, enabled = GetSpellCooldown( NextSpellName )
+--					print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inrange "..tostring(inRange).." cooldown "..tostring(duration).." isactive "..tostring(spellId)..".");
+					if( usable == true and nomana == false and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency ) then
+--						print( " advising : "..NextSpellName )
+						SignalBestAction( N )
+						return 1
+					end
+				end
+			end
+		end
+	end
 end
 
+local function AdviseLastMinuteHealthSave()
+	-- if we are low on health than try to Divine shield / lay on hands / Hand of protection
+	-- if we are divine shielded / hand of protection, than use flash heal to heal up
+	local unit = "player";
+	local HealthNow = UnitHealth( unit )
+	local HealthMax = UnitHealthMax( unit )
+	local HealthPCT	= HealthNow * 100 / HealthMax
+	if( HealthPCT > MaxHealthPCTToCastLifeSaverSpells ) then
+		return 0
+	end
+	
+    for N=ResetFightSpellsStartAt,ResetFightSpellsEndAt,1 do
+		local NextSpellName = SpellNames[ N ];
+		if( NextSpellName ~= nil ) then
+			local usable, nomana = IsUsableSpell( NextSpellName );
+			local inRange = IsSpellInRange( NextSpellName, unit )
+			local start, duration, enabled = GetSpellCooldown( NextSpellName )
+--			 print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." Exists "..tostring(Exists).." IsVisible "..tostring(IsVisible).." CanAttack "..tostring(CanAttack).." inRange "..tostring(inRange)..".");
+--			 print( NextSpellName );
+			if( usable == true and nomana == false and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency ) then
+				SignalBestAction( N );
+				return 1
+			end
+		end
+	end
+	
+	return 0
+end
+
+
 local DemoMode = -1
+local ValidImageCount = 0
+local NeedCounterPrint = 1
 local function AdviseNextBestAction()
 -- /target [@targettarget,harm,nodead,exists] [@focus,harm,nodead,exists] [@focustarget,harm,exists] [harm,nodead,exists]
 	
@@ -250,17 +354,31 @@ local function AdviseNextBestAction()
 			DemoMode = DemoMode + 1
 		end
 		if( DemoMode > MaxUsedIndexes ) then 
-			DemoMode = 0
+			DemoMode = 1
+			if( NeedCounterPrint == 1 ) then
+				print( "Number of unique images generated : "..ValidImageCount);
+				NeedCounterPrint = 0
+			end
+			ValidImageCount = 0
 		end
 		if( SpellNames[ DemoMode ] ~= nil ) then
 			SignalBestAction( DemoMode );
+			ValidImageCount = ValidImageCount + 1
 		end
 		return
 	end
 
-	local unit = "target";
-	local SelectedAttackSpell = SpellNames[7] --this could be attack also
+	-- we are probably dead soon
+	if( AdviseLastMinuteHealthSave( ) == 1 ) then
+		return
+	end
+
+	-- scripted
+	if( AdviseRetributionPaladinSpecific( ) == 1 ) then
+		return
+	end
 	
+	local unit = "target";
 --	 print(" exists "..tostring(UnitExists( unit )).." canattack "..tostring(UnitCanAttack( "player", unit )).." visible "..tostring(UnitIsVisible(unit)).." dead "..tostring(UnitIsDeadOrGhost(unit)));
 	if( UnitExists( unit ) == false or UnitCanAttack( "player", unit ) == false or UnitIsVisible(unit) == false or UnitIsDeadOrGhost( unit ) == true ) then
 		if( InCombatLockdown() == 1 or checkCombat() == 1 ) then 
@@ -287,9 +405,13 @@ local function AdviseNextBestAction()
 	end
 	
 	-- if we could not cast any spells on target than try to shield ourself out of boredom
-	if( ShieldUpWhileIdleInCombat == 0 or AdviseNextBestActionDefensive( 1, nil ) == 0 ) then
-		SignalBestAction( 7 )
+	local inRange = IsSpellInRange( "Rebuke", unit )	-- only shield up if we are too far away to fight. This saves about 5% DPS...not sure we should loose so much dps for the sake of shields
+	if( ShieldUpWhileIdleInCombat == 1 and inRange == 0 and AdviseNextBestActionDefensive( 1, nil ) == 1 ) then
+		return
 	end
+	
+	-- samo samo bored
+	SignalBestAction( 7 )
 end
 
 SLASH_TARGETROLE1 = '/NextBestSpell';
@@ -326,7 +448,7 @@ frame:SetScript("OnEvent", eventHandler);
 
 function frame:onUpdate(sinceLastUpdate)
 	self.sinceLastUpdate = (self.sinceLastUpdate or 0) + sinceLastUpdate;
-	if ( self.sinceLastUpdate >= 1 ) then 
+	if ( self.sinceLastUpdate >= 1 or ( SpellCastAllowLatency > 0 and DemoMode == -1 ) ) then 
 		AdviseNextBestAction()
 		self.sinceLastUpdate = 0;
 	end
