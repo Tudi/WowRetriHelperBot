@@ -354,7 +354,7 @@ local function AdviseNextBestAction()
 			DemoMode = DemoMode + 1
 		end
 		if( DemoMode > MaxUsedIndexes ) then 
-			DemoMode = 1
+			DemoMode = 0
 			if( NeedCounterPrint == 1 ) then
 				print( "Number of unique images generated : "..ValidImageCount);
 				NeedCounterPrint = 0
