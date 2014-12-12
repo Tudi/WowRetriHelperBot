@@ -10,7 +10,7 @@ local ShieldUpWhileIdleInCombat = 1
 local SecondsUntilSpellCastEndToInterruptStart = 1.5	-- put as small as possible to catch all interruptable spells. Needs to be larger than SecondsUntilSpellCastEndToInterruptEnd
 local SecondsUntilSpellCastEndToInterruptEnd = 0.5	-- due to global cooldown + addon latency + game latency if you put this to a too small value the interrupt might fail and you wasted interrupt spell
 local DoNotInterruptPVPSpellWithCastTimeLessThan = 2000	-- i managed to interrupt 3 instant cast spells in a row. That is definetely getting reported as cheater
-local MaxHealthPCTToCastLifeSaverSpells = 10 -- divine shield and stuff
+local MaxHealthPCTToCastLifeSaverSpells = 20 -- divine shield and stuff
 
 -- listing possible texts here so we can take screenshots of them using autoit
 local SpellNames = {};
@@ -45,6 +45,7 @@ SpellSignalPrefix[22] = "=";
 -- interrupt spells
 local InterruptSpellsStartAt = 30
 local InterruptSpellsEndAt = 32
+local FistOfJusticeIndex = 30
 SpellNames[30] = "Fist of Justice";
 SpellSignalPrefix[30] = "6";
 SpellNames[31] = "Rebuke";
@@ -296,20 +297,32 @@ local function AdviseRetributionPaladinSpecific()
 --				print("we have Divine Crusader and final verdict");
 				local N = IndexDivineStorm
 				local NextSpellName = SpellNames[ N ];
-				if( NextSpellName ~= nil ) then
-					local usable, nomana = IsUsableSpell( NextSpellName )
-					local inRange = IsSpellInRange( "Rebuke", unit )	-- divine storm is AOE, but we want melee range
-					local start, duration, enabled = GetSpellCooldown( NextSpellName )
---					print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inrange "..tostring(inRange).." cooldown "..tostring(duration).." isactive "..tostring(spellId)..".");
-					if( usable == true and nomana == false and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency ) then
---						print( " advising : "..NextSpellName )
-						SignalBestAction( N )
-						return 1
-					end
+				local usable, nomana = IsUsableSpell( NextSpellName )
+				local inRange = IsSpellInRange( "Rebuke", unit )	-- divine storm is AOE, but we want melee range
+				local start, duration, enabled = GetSpellCooldown( NextSpellName )
+--				print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inrange "..tostring(inRange).." cooldown "..tostring(duration).." isactive "..tostring(spellId)..".");
+				if( usable == true and nomana == false and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency ) then
+--					print( " advising : "..NextSpellName )
+					SignalBestAction( N )
+					return 1
 				end
 			end
 		end
 	end
+	
+	-- if we are in PVP and target is close by than stun him as soon as posible to maximize the usage of fist of justice
+	local isPlayer = UnitPlayerControlled( unit )
+	if( isPlayer == 1 and UnitExists( unit ) == true and UnitCanAttack( "player", unit ) == true and UnitIsVisible(unit) == true and UnitIsDeadOrGhost( unit ) == false and ( InCombatLockdown() == 1 or checkCombat() == 1 ) ) then
+		local N = FistOfJusticeIndex
+		local NextSpellName = SpellNames[ N ];
+		local inRange = IsSpellInRange( NextSpellName, unit )
+		local start, duration, enabled = GetSpellCooldown( NextSpellName )
+		if( usable == true and nomana == false and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency ) then
+			SignalBestAction( N )
+			return 1
+		end
+	end
+
 end
 
 local function AdviseLastMinuteHealthSave()
