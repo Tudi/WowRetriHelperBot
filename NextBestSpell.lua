@@ -311,10 +311,12 @@ local function AdviseRetributionPaladinSpecific()
 	end
 	
 	-- if we are in PVP and target is close by than stun him as soon as posible to maximize the usage of fist of justice
+	unit = "target";
 	local isPlayer = UnitPlayerControlled( unit )
-	if( isPlayer == 1 and UnitExists( unit ) == true and UnitCanAttack( "player", unit ) == true and UnitIsVisible(unit) == true and UnitIsDeadOrGhost( unit ) == false and ( InCombatLockdown() == 1 or checkCombat() == 1 ) ) then
+	if( isPlayer == true and UnitExists( unit ) == true and UnitCanAttack( "player", unit ) == true and UnitIsVisible(unit) == true and UnitIsDeadOrGhost( unit ) == false and ( InCombatLockdown() == 1 or checkCombat() == 1 ) ) then
 		local N = FistOfJusticeIndex
 		local NextSpellName = SpellNames[ N ];
+		local usable, nomana = IsUsableSpell( NextSpellName )
 		local inRange = IsSpellInRange( NextSpellName, unit )
 		local start, duration, enabled = GetSpellCooldown( NextSpellName )
 		if( usable == true and nomana == false and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency ) then

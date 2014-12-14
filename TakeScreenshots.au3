@@ -1,5 +1,5 @@
 ; In case you did not do it yet : set $IsFirstRun = 1, take a full screenshot of your ingame wow so you can regenerate "Resync.bmp"
-; If you have a valid "Resync.bmp" than set $IsFirstRun = 1 and generate images you will search later
+; If you have a valid "Resync.bmp" than set $IsFirstRun = 0 and generate images you will search later
 $IsFirstRun = 0
 
 ;The minimum pixel count for image width so you can search for images without confusing them. Maybe even 2 characters are enough if you do not have too many actions ?
