@@ -1,7 +1,7 @@
 ## Interface: 30000 
 ## Title: KickBot
-## Version: 1.0.0
-## Notes: Watch your target and cast spells accordingly
+## Version: 1.0.1
+## Notes: Watch your target / focustarget and cast spells accordingly
 ## Author: Tudi
 KickBot.lua
 KickBot.xml
