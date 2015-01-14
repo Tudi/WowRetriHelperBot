@@ -7,7 +7,8 @@ local DoNotInterruptPVPSpellWithCastTimeLessThan = 1501	-- i managed to interrup
 -- set this to 0 to disable NPC spell interrupts
 local AllowAnyNPCSpellInterrupt = 1
 local AllowAnyPlayerSpellInterrupt = 1
-local SpellNamesCanInterruptOnPlayers = "[any1][any2]"
+local SpellNamesCanInterruptOnPlayers = "[any1]"
+local SpellNamesCanNotInterrupt = ""
 
 -- listing possible texts here so we can take screenshots of them using autoit
 local TargetTypes = {}
@@ -135,6 +136,10 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 	
 	local isPlayer = UnitPlayerControlled( unit )
 
+--[[	
+	if( not spell && not cspell ) then
+		return
+	end
 	local SpellIsInWhiteList = 0
 	-- Deny all NPC spell interrupts. But WHY !?!?!?!
 	if( AllowAnyNPCSpellInterrupt == 1 and isPlayer ~= 1 ) then
@@ -145,11 +150,22 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 		SpellIsInWhiteList = 1
 	end
 	
+	if( SpellIsInWhiteList ~= 1 ) then
+		print("spell "..spell.." is not in whitelist " )
+		return
+	end
+	
+	if( string.find( SpellNamesCanNotInterrupt, "["..spell.."]" ) ~= nil ) then
+		print("spell "..spell.." is not in blacklist " )
+		return
+	end
+	]]--
+	
 	local RemainingSecondsToFinishCast = -1
 	if( spell and InterruptDeny == false ) then
 		RemainingSecondsToFinishCast = endTime/1000 - GetTime()
 		if( isPlayer == 1 and endTime - startTime < DoNotInterruptPVPSpellWithCastTimeLessThan ) then
-			print(" player is casting instant spell "..cspell.." cast time "..tostring(endTime - startTime) )
+--			print(" player is casting instant spell "..cspell.." cast time "..tostring(endTime - startTime) )
 			return
 		end
 	end
@@ -194,6 +210,14 @@ function KickBot_onUpdate( )
 	elseif( AdviseNextBestActionInterrupt( 1 ) == 1 ) then	-- focus
 		return
 --	elseif( AdviseNextBestActionInterrupt( 2 ) == 1 ) then	-- arena1
+--		return
+--	elseif( AdviseNextBestActionInterrupt( 3 ) == 1 ) then	-- arena2
+--		return
+--	elseif( AdviseNextBestActionInterrupt( 4 ) == 1 ) then	-- arena3
+--		return
+--	elseif( AdviseNextBestActionInterrupt( 5 ) == 1 ) then	-- arena4
+--		return
+--	elseif( AdviseNextBestActionInterrupt( 6 ) == 1 ) then	-- arena5
 --		return
 	else
 		SignalBestAction( 0 )
