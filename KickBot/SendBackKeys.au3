@@ -102,13 +102,13 @@ while( $ScriptIsRunning == 1 )
 		local $ColorIndex = Int( ( $ColorB - $FirstValidRGB ) / $RGBStep )
 		local $TargetIndex = Int( ( $ColorR - $FirstValidRGB ) / $RGBStep )
 		
-		; Debugging. Can delete this
-;		if( WinActive( "World of Warcraft" ) ) then 
+		if( WinActive( "World of Warcraft" ) ) then 
+			; Debugging. Can delete this
 ;			MsgBox( $MB_SYSTEMMODAL, "", "change detected " & $ColorR & " " & $ColorG & " " & $ColorB )
 ;			Send( "{ENTER}" & " change detected " & $ColorB & " with index " & $ColorIndex & " " & $TargetIndex & " {ENTER}" )	
-;		endif
+			EventImageFound( $ColorIndex, $TargetIndex )
+		endif
 		
-		EventImageFound( $ColorIndex, $TargetIndex )
 		$PrevValue = $LuaColor
 	endif
 	
