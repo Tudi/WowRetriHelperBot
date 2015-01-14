@@ -10,16 +10,17 @@ HotKeySet("\", "TogglePause")
 
 global $LuaFramePosX = -1
 global $LuaFramePosy = -1
-global $RGBStep = 16
+global $RGBStep = 4
 global $FirstValidRGB = 1 * $RGBStep
 global $SendKeyForMainTarget[20]
 global $SendKeyForFocusTarget[20]
 global $ExpectedLUAIdleValue = 0x0010FF80
 
+; the list of spell names is in the same order as in KickBot.lua. KickBot.lua will send us the index to this vector.
 ; you can find key values here : https://www.autoitscript.com/autoit3/docs/appendix/SendKeys.htm
-$SendKeyForMainTarget[0] = "8"		;Fist of Justice
-$SendKeyForMainTarget[1] = "9"		;Rebuke
-$SendKeyForMainTarget[3] = "0"		;Arcane Torrent
+$SendKeyForMainTarget[0] = "9"		;Fist of Justice
+$SendKeyForMainTarget[1] = "8"		;Rebuke
+$SendKeyForMainTarget[3] = "-"		;Arcane Torrent
 $SendKeyForMainTarget[4] = "9"		;Counterspell
 $SendKeyForMainTarget[5] = "9"		;Wind Shear
 $SendKeyForMainTarget[6] = "9"		;Kick
@@ -28,6 +29,7 @@ $SendKeyForMainTarget[8] = "9"		;Pummel
 $SendKeyForMainTarget[9] = "9"		;Spear Hand Strike
 $SendKeyForMainTarget[10] = "9"		;Mind Freeze
 $SendKeyForMainTarget[11] = "9"		;Strangulate
+$SendKeyForMainTarget[12] = "8"		;Hammer of Justice
 ; List is very similar, we only send different key for the spell as you will probably be using a macro like : /cast @focustarget Rebuke
 $SendKeyForFocusTarget[0] = "-"		;Fist of Justice
 $SendKeyForFocusTarget[1] = "="		;Rebuke
@@ -40,6 +42,8 @@ $SendKeyForFocusTarget[8] = "="		;Pummel
 $SendKeyForFocusTarget[9] = "="		;Spear Hand Strike
 $SendKeyForFocusTarget[10] = "="	;Mind Freeze
 $SendKeyForFocusTarget[11] = "="	;Strangulate
+$SendKeyForFocusTarget[12] = "9"	;Hammer of Justice
+global $MaxIndexInVector = UBound( $SendKeyForMainTarget )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Anything below should be working without any changes. If not.....it's bad
@@ -92,18 +96,19 @@ while( $ScriptIsRunning == 1 )
 	
 	; do not spam same keys
 	if( $PrevValue <> $LuaColor ) then 
-		;MsgBox( $MB_SYSTEMMODAL, "", "change detected " & $ColorB )
-		local $ColorB = Int( $LuaColor / 65535 )
-		local $ColorR = Mod( $LuaColor, 256 )
+		local $ColorB = Mod( $LuaColor, 256 )
+		local $ColorG = Mod( Int( $LuaColor / 256 ), 256 )
+		local $ColorR = Mod( Int( $LuaColor / 65536 ), 256 )
 		local $ColorIndex = Int( ( $ColorB - $FirstValidRGB ) / $RGBStep )
-		local $TargetIndex = Int( ( $ColorB - $FirstValidRGB ) / $RGBStep )
+		local $TargetIndex = Int( ( $ColorR - $FirstValidRGB ) / $RGBStep )
 		
 		; Debugging. Can delete this
-		if( WinActive( "World of Warcraft" ) ) then 
-			Send( "{ENTER}" & " change detected " & $ColorB & " with index " & $ColorIndex & " {ENTER}" )	
-		endif
+;		if( WinActive( "World of Warcraft" ) ) then 
+;			MsgBox( $MB_SYSTEMMODAL, "", "change detected " & $ColorR & " " & $ColorG & " " & $ColorB )
+;			Send( "{ENTER}" & " change detected " & $ColorB & " with index " & $ColorIndex & " " & $TargetIndex & " {ENTER}" )	
+;		endif
 		
-		EventImageFound( $ColorIndex )
+		EventImageFound( $ColorIndex, $TargetIndex )
 		$PrevValue = $LuaColor
 	endif
 	
@@ -121,15 +126,21 @@ func EventImageFound( $SpellNameIndex, $TargetIndex )
 		return
 	endif
 	
-	if( $TargetIndex == 0 &&  $SendKeyForMainTarget[ $SpellNameIndex ] ) then 
-		Send( $SendKeyForMainTarget[ $SpellNameIndex ] )
-	elseif( $SendKeyForFocusTarget[ $SpellNameIndex ] ) then
+	if( $TargetIndex > 6 ) then
+		return
+	endif
+	
+	if( $TargetIndex == 1 and $SpellNameIndex >= 0 and $SpellNameIndex < UBound( $SendKeyForFocusTarget ) and $SendKeyForFocusTarget[ $SpellNameIndex ] ) then
+;		Send( "{ENTER}" & "1 1) target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKeyForFocusTarget[ $SpellNameIndex ] & " {ENTER}" )	
 		Send( $SendKeyForFocusTarget[ $SpellNameIndex ] )
+	elseif( $SpellNameIndex >= 0 and $SpellNameIndex < UBound( $SendKeyForMainTarget ) and $SendKeyForMainTarget[ $SpellNameIndex ] ) then 
+;		Send( "{ENTER}" & "2 2) target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKeyForMainTarget[ $SpellNameIndex ] & " {ENTER}" )	
+		Send( $SendKeyForMainTarget[ $SpellNameIndex ] )
 	endif
 endfunc
 
 Func TryToGuessLocation()
-	MsgBox( $MB_SYSTEMMODAL, "", "Location of KickBot Lua frame is not define. Trying to search for it" )
+	MsgBox( $MB_SYSTEMMODAL, "", "Location of KickBot Lua frame is not defined. Trying to search for it" )
 	Local $set = PixelSearch( 0, 0, @DesktopWidth, @DesktopHeight, $ExpectedLUAIdleValue, 0 )
 	If Not @error Then
 		$LuaFramePosX = $set[0] + 8

@@ -10,9 +10,17 @@ local AllowAnyPlayerSpellInterrupt = 1
 local SpellNamesCanInterruptOnPlayers = "[any1][any2]"
 
 -- listing possible texts here so we can take screenshots of them using autoit
+local TargetTypes = {}
+TargetTypes[0] = "target"
+TargetTypes[1] = "focus"
+TargetTypes[2] = "arena1"
+TargetTypes[3] = "arena2"
+TargetTypes[4] = "arena3"
+TargetTypes[5] = "arena4"
+TargetTypes[6] = "arena5"
 local SpellNames = {}
 local SpellColorRGB = {}
-local SpellRGBStep = 16		-- 255 / 15 = 16
+local SpellRGBStep = 4		-- 255 / 15 = 16
 local IndexCounter = 0
 -- when we do nothing we will show this
 SpellNames[IndexCounter] = "Waiting for the moonshine"
@@ -69,6 +77,10 @@ SpellNames[IndexCounter] = "Wind Shear"
 SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
 IndexCounter = IndexCounter + 1
 
+SpellNames[IndexCounter] = "Hammer of Justice"
+SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
+IndexCounter = IndexCounter + 1
+
 --print("Index Counter : "..IndexCounter )
 
 local InterruptSpellsEndAt = IndexCounter
@@ -92,31 +104,35 @@ function KickBot_OnLoad(self)
     print("KickBot loaded.Don't forget to start AU3 script. To stop AU3 press '['. To pause AU3 press '\\'.");
 end
 
-local function SignalBestAction( Index )
+local function SignalBestAction( Index, TargetTypeIndex )
 --	AutoIt will monitor the colors and send back keys based on it
 --	KickBotFrame.text:SetText( Index.." "..SpellColorRGB[ Index ] )
 	if( Index <= 0 ) then 
 		KickBotFrame.texture:SetVertexColor( 16 / 255.0, 255 / 255.0, 128 / 255.0, 1 ) -- magic number to allow AU3 to find it
 	elseif( Index < IndexCounter ) then
 		local RGBColor = SpellColorRGB[ Index ] / 255.0
-		KickBotFrame.texture:SetVertexColor( RGBColor, RGBColor, RGBColor, 1 )
+		local TargetTypeRGB = ( TargetTypeIndex + 1 ) * SpellRGBStep / 255.0
+		KickBotFrame.texture:SetVertexColor( TargetTypeRGB, RGBColor, RGBColor, 1 )
 	end
 end
 
-local function AdviseNextBestActionInterrupt( )
+local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 	-- Check if our target is casting. If he is casting then we should try to queue an interrupt before cassting ends - interrupt cast time
-	local unit = "target";
+	local unit = TargetTypes[ TargetTypeIndex ];
 	local spell, rank, displayName, icon, startTime, endTime, isTradeSkill, castID, InterruptDeny = UnitCastingInfo( unit )
 	local cspell, csubText, ctext, ctexture, cstartTime, cendTime, cisTradeSkill, cInterruptDeny = UnitChannelInfo( unit )
 
---	if( spell ) then
---		local RemainingSecondsToFinishCast = endTime/1000 - GetTime()
---		print(" Target is casting spell "..spell.." can interrupt "..tostring(InterruptDeny).." seconds until finished "..tostring(RemainingSecondsToFinishCast).." we want "..SecondsUntilSpellCastEndToInterruptStart );
---	end
---	if( cspell ) then
---		local RemainingSecondsToFinishCast = cendTime/1000 - GetTime()
---		print(" Target is casting spell "..cspell.." can interrupt "..tostring(cInterruptDeny).." seconds until finished "..tostring(RemainingSecondsToFinishCast).." we want "..SecondsUntilSpellCastEndToInterruptStart );
---	end
+--[[	
+	if( spell ) then
+		local RemainingSecondsToFinishCast = endTime/1000 - GetTime()
+		print(" Target is casting spell "..spell.." interruptdeny '"..tostring(InterruptDeny).."' seconds until finished "..tostring(RemainingSecondsToFinishCast).." we want "..SecondsUntilSpellCastEndToInterruptStart );
+	end
+	if( cspell ) then
+		local RemainingSecondsToFinishCast = cendTime/1000 - GetTime()
+		print(" Target is casting spell "..cspell.." interruptdeny '"..tostring(cInterruptDeny).."' seconds until finished "..tostring(RemainingSecondsToFinishCast).." we want "..SecondsUntilSpellCastEndToInterruptStart );
+	end
+	]]--
+	
 	local isPlayer = UnitPlayerControlled( unit )
 
 	local SpellIsInWhiteList = 0
@@ -149,10 +165,10 @@ local function AdviseNextBestActionInterrupt( )
 					local inRange = IsSpellInRange( NextSpellName, unit )
 --					local inRange2 = UnitInRange( unit )	--40 yards range check, should be the same as spell in range, only that AOE spells have radius and not range
 					local start, duration, enabled = GetSpellCooldown( NextSpellName )
---					 print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inRange "..tostring(inRange).." coldown "..tostring(duration)..".");
-					if( usable == true and nomana == false and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency ) then
---						print( " advising : "..NextSpellName );
-						SignalBestAction( N );
+--					print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inRange "..tostring(inRange).." coldown "..tostring(duration)..".");
+					if( ( usable == true or usable == 1 ) and ( nomana == false or nomana == nil ) and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency ) then
+--						print( " advising : "..NextSpellName.." on target (string) '"..unit.."'" );
+						SignalBestAction( N, TargetTypeIndex );
 						return 1
 					end
 				end
@@ -161,11 +177,11 @@ local function AdviseNextBestActionInterrupt( )
 	return 0
 end
 
-local DebugTestAll = 0
+local DebugTestAll = -1
 function KickBot_onUpdate( )
 	
 	if( DebugTestAll ~= -1 ) then 
-		SignalBestAction( DebugTestAll )
+		SignalBestAction( DebugTestAll, DebugTestAll )
 		if( PrevTime ~= time() ) then DebugTestAll = DebugTestAll + 1 end
 		PrevTime = time()
 		if( DebugTestAll >= IndexCounter ) then DebugTestAll = 0 end
@@ -173,8 +189,12 @@ function KickBot_onUpdate( )
 	end
 
 	-- interrupt target spell casting if possible
-	if( AdviseNextBestActionInterrupt( ) == 1 ) then
+	if( AdviseNextBestActionInterrupt( 0 ) == 1 ) then	-- target
 		return
+	elseif( AdviseNextBestActionInterrupt( 1 ) == 1 ) then	-- focus
+		return
+--	elseif( AdviseNextBestActionInterrupt( 2 ) == 1 ) then	-- arena1
+--		return
 	else
 		SignalBestAction( 0 )
 	end
