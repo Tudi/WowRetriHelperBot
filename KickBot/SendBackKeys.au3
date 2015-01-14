@@ -20,29 +20,29 @@ global $ExpectedLUAIdleValue = 0x0010FF80
 ; you can find key values here : https://www.autoitscript.com/autoit3/docs/appendix/SendKeys.htm
 $SendKeyForMainTarget[0] = "9"		;Fist of Justice
 $SendKeyForMainTarget[1] = "8"		;Rebuke
-$SendKeyForMainTarget[3] = "-"		;Arcane Torrent
-$SendKeyForMainTarget[4] = "9"		;Counterspell
-$SendKeyForMainTarget[5] = "9"		;Wind Shear
-$SendKeyForMainTarget[6] = "9"		;Kick
-$SendKeyForMainTarget[7] = "9"		;Counter Shot
-$SendKeyForMainTarget[8] = "9"		;Pummel
-$SendKeyForMainTarget[9] = "9"		;Spear Hand Strike
-$SendKeyForMainTarget[10] = "9"		;Mind Freeze
-$SendKeyForMainTarget[11] = "9"		;Strangulate
-$SendKeyForMainTarget[12] = "8"		;Hammer of Justice
+$SendKeyForMainTarget[2] = "0"		;Arcane Torrent
+$SendKeyForMainTarget[3] = "9"		;Counterspell
+$SendKeyForMainTarget[4] = "9"		;Wind Shear
+$SendKeyForMainTarget[5] = "9"		;Kick
+$SendKeyForMainTarget[6] = "9"		;Counter Shot
+$SendKeyForMainTarget[7] = "9"		;Pummel
+$SendKeyForMainTarget[8] = "9"		;Spear Hand Strike
+$SendKeyForMainTarget[9] = "9"		;Mind Freeze
+$SendKeyForMainTarget[10] = "9"		;Strangulate
+$SendKeyForMainTarget[11] = "9"		;Hammer of Justice
 ; List is very similar, we only send different key for the spell as you will probably be using a macro like : /cast @focustarget Rebuke
 $SendKeyForFocusTarget[0] = "-"		;Fist of Justice
 $SendKeyForFocusTarget[1] = "="		;Rebuke
-$SendKeyForFocusTarget[3] = "0"		;Arcane Torrent
-$SendKeyForFocusTarget[4] = "="		;Counterspell
-$SendKeyForFocusTarget[5] = "="		;Wind Shear
-$SendKeyForFocusTarget[6] = "="		;Kick
-$SendKeyForFocusTarget[7] = "="		;Counter Shot
-$SendKeyForFocusTarget[8] = "="		;Pummel
-$SendKeyForFocusTarget[9] = "="		;Spear Hand Strike
-$SendKeyForFocusTarget[10] = "="	;Mind Freeze
-$SendKeyForFocusTarget[11] = "="	;Strangulate
-$SendKeyForFocusTarget[12] = "9"	;Hammer of Justice
+$SendKeyForFocusTarget[2] = "0"		;Arcane Torrent
+$SendKeyForFocusTarget[3] = "="		;Counterspell
+$SendKeyForFocusTarget[4] = "="		;Wind Shear
+$SendKeyForFocusTarget[5] = "="		;Kick
+$SendKeyForFocusTarget[6] = "="		;Counter Shot
+$SendKeyForFocusTarget[7] = "="		;Pummel
+$SendKeyForFocusTarget[8] = "="		;Spear Hand Strike
+$SendKeyForFocusTarget[9] = "="		;Mind Freeze
+$SendKeyForFocusTarget[10] = "="	;Strangulate
+$SendKeyForFocusTarget[11] = "-"	;Hammer of Justice
 global $MaxIndexInVector = UBound( $SendKeyForMainTarget )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,14 +99,14 @@ while( $ScriptIsRunning == 1 )
 		local $ColorB = Mod( $LuaColor, 256 )
 		local $ColorG = Mod( Int( $LuaColor / 256 ), 256 )
 		local $ColorR = Mod( Int( $LuaColor / 65536 ), 256 )
-		local $ColorIndex = Int( ( $ColorB - $FirstValidRGB ) / $RGBStep )
+		local $SpellNameIndex = Int( ( $ColorB - $FirstValidRGB ) / $RGBStep )
 		local $TargetIndex = Int( ( $ColorR - $FirstValidRGB ) / $RGBStep )
 		
 		if( WinActive( "World of Warcraft" ) ) then 
 			; Debugging. Can delete this
 ;			MsgBox( $MB_SYSTEMMODAL, "", "change detected " & $ColorR & " " & $ColorG & " " & $ColorB )
-;			Send( "{ENTER}" & " change detected " & $ColorB & " with index " & $ColorIndex & " " & $TargetIndex & " {ENTER}" )	
-			EventImageFound( $ColorIndex, $TargetIndex )
+;			Send( "{ENTER}" & " change detected " & $ColorR & " " & $ColorG & " " & $ColorB & " with index " & $SpellNameIndex & " " & $TargetIndex & " {ENTER}" )	
+			EventImageFound( $SpellNameIndex, $TargetIndex )
 		endif
 		
 		$PrevValue = $LuaColor
@@ -131,11 +131,11 @@ func EventImageFound( $SpellNameIndex, $TargetIndex )
 	endif
 	
 	if( $TargetIndex == 1 and $SpellNameIndex >= 0 and $SpellNameIndex < UBound( $SendKeyForFocusTarget ) and $SendKeyForFocusTarget[ $SpellNameIndex ] ) then
-;		Send( "{ENTER}" & "1 1) target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKeyForFocusTarget[ $SpellNameIndex ] & " {ENTER}" )	
 		Send( $SendKeyForFocusTarget[ $SpellNameIndex ] )
+;		Send( "{ENTER}" & "1 1) target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKeyForFocusTarget[ $SpellNameIndex ] & " {ENTER}" )	
 	elseif( $SpellNameIndex >= 0 and $SpellNameIndex < UBound( $SendKeyForMainTarget ) and $SendKeyForMainTarget[ $SpellNameIndex ] ) then 
-;		Send( "{ENTER}" & "2 2) target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKeyForMainTarget[ $SpellNameIndex ] & " {ENTER}" )	
 		Send( $SendKeyForMainTarget[ $SpellNameIndex ] )
+;		Send( "{ENTER}" & "2 2) target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKeyForMainTarget[ $SpellNameIndex ] & " {ENTER}" )	
 	endif
 endfunc
 

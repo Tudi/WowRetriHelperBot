@@ -7,7 +7,7 @@ local DoNotInterruptPVPSpellWithCastTimeLessThan = 1501	-- i managed to interrup
 -- set this to 0 to disable NPC spell interrupts
 local AllowAnyNPCSpellInterrupt = 1
 local AllowAnyPlayerSpellInterrupt = 1
-local SpellNamesCanInterruptOnPlayers = "[any1]"
+local SpellNamesCanInterruptOnPlayers = "|Fireball||Frostbolt|"	-- local SpellNamesCanInterruptOnPlayers = "|Fireball||Frostbolt|"
 local SpellNamesCanNotInterrupt = ""
 
 -- listing possible texts here so we can take screenshots of them using autoit
@@ -74,10 +74,6 @@ SpellNames[IndexCounter] = "Strangulate"
 SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
 IndexCounter = IndexCounter + 1
 
-SpellNames[IndexCounter] = "Wind Shear"
-SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
-IndexCounter = IndexCounter + 1
-
 SpellNames[IndexCounter] = "Hammer of Justice"
 SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
 IndexCounter = IndexCounter + 1
@@ -105,15 +101,21 @@ function KickBot_OnLoad(self)
     print("KickBot loaded.Don't forget to start AU3 script. To stop AU3 press '['. To pause AU3 press '\\'.");
 end
 
+local DebugLastValue = -1
 local function SignalBestAction( Index, TargetTypeIndex )
 --	AutoIt will monitor the colors and send back keys based on it
 --	KickBotFrame.text:SetText( Index.." "..SpellColorRGB[ Index ] )
 	if( Index <= 0 ) then 
 		KickBotFrame.texture:SetVertexColor( 16 / 255.0, 255 / 255.0, 128 / 255.0, 1 ) -- magic number to allow AU3 to find it
+		DebugLastValue = -1
 	elseif( Index < IndexCounter ) then
 		local RGBColor = SpellColorRGB[ Index ] / 255.0
 		local TargetTypeRGB = ( TargetTypeIndex + 1 ) * SpellRGBStep / 255.0
 		KickBotFrame.texture:SetVertexColor( TargetTypeRGB, RGBColor, RGBColor, 1 )
+--		if( DebugLastValue ~= Index ) then
+--			print( "Change state to "..Index.." target "..TargetTypeIndex )
+--		end
+		DebugLastValue = Index
 	end
 end
 
@@ -136,30 +138,39 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 	
 	local isPlayer = UnitPlayerControlled( unit )
 
---[[	
-	if( not spell && not cspell ) then
+	if( not spell and not cspell ) then
 		return
 	end
+	
+	local SpellName = spell
+	if( SpellName == nil ) then 
+		SpellName = cspell
+	end
+	
 	local SpellIsInWhiteList = 0
 	-- Deny all NPC spell interrupts. But WHY !?!?!?!
 	if( AllowAnyNPCSpellInterrupt == 1 and isPlayer ~= 1 ) then
+--		print( "Target is NPC" )
 		SpellIsInWhiteList = 1
 	elseif( AllowAnyPlayerSpellInterrupt == 1 and isPlayer == 1 ) then
+--		print( "Can interrupt all target player spells" )
 		SpellIsInWhiteList = 1
-	elseif( SpellIsInWhiteList == 0 and string.find( SpellNamesCanInterruptOnPlayers, "["..spell.."]" ) ~= nil ) then
+	elseif( string.find( SpellNamesCanInterruptOnPlayers, "(|"..SpellName.."|)" ) ~= nil ) then
+--		print( "Spell "..SpellName.." can be interrupted because of whitelist" )
 		SpellIsInWhiteList = 1
 	end
 	
 	if( SpellIsInWhiteList ~= 1 ) then
-		print("spell "..spell.." is not in whitelist " )
+--		print("spell "..SpellName.." is not in whitelist " )
 		return
 	end
 	
-	if( string.find( SpellNamesCanNotInterrupt, "["..spell.."]" ) ~= nil ) then
-		print("spell "..spell.." is not in blacklist " )
+	if( string.find( SpellNamesCanNotInterrupt, "(|"..SpellName.."|)" ) ~= nil ) then
+--local s1,s2,s3,s4 = string.find( SpellNamesCanNotInterrupt, "(|"..SpellName.."|)" )
+--print( "s1 "..tostring(s1).." s2 "..tostring(s2).." ".." s3 "..tostring(s3).." s4 "..tostring(s4)..SpellNamesCanNotInterrupt )
+--		print("spell "..SpellName.." is in blacklist " )
 		return
 	end
-	]]--
 	
 	local RemainingSecondsToFinishCast = -1
 	if( spell and InterruptDeny == false ) then
@@ -174,14 +185,16 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 --		 print("channeling : "..cspell.." cstartTime "..tostring(cstartTime).." cendTime "..tostring(cendTime).." cInterruptDeny "..tostring(cInterruptDeny).." RemainingSecondsToFinishCast "..tostring(RemainingSecondsToFinishCast)..".");
 	end
 	if( RemainingSecondsToFinishCast <= SecondsUntilSpellCastEndToInterruptStart and RemainingSecondsToFinishCast >= SecondsUntilSpellCastEndToInterruptEnd ) then
+--			print( InterruptSpellsStartAt.." "..InterruptSpellsEndAt )
 			for N=InterruptSpellsStartAt,InterruptSpellsEndAt,1 do
 				local NextSpellName = SpellNames[ N ];
+--				print( N.." "..NextSpellName )
 				if( NextSpellName ~= nil ) then
 					local usable, nomana = IsUsableSpell( NextSpellName )
 					local inRange = IsSpellInRange( NextSpellName, unit )
 --					local inRange2 = UnitInRange( unit )	--40 yards range check, should be the same as spell in range, only that AOE spells have radius and not range
 					local start, duration, enabled = GetSpellCooldown( NextSpellName )
---					print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inRange "..tostring(inRange).." coldown "..tostring(duration)..".");
+--					print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inRange "..tostring(inRange).." coldown "..tostring(duration)..".")
 					if( ( usable == true or usable == 1 ) and ( nomana == false or nomana == nil ) and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency ) then
 --						print( " advising : "..NextSpellName.." on target (string) '"..unit.."'" );
 						SignalBestAction( N, TargetTypeIndex );

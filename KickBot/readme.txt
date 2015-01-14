@@ -19,6 +19,30 @@ How to check if it is working :
 - The greenish box should change it's color when the AU3 file should do something
 - AU3 file should send keys presses to the client when greenish box changes color
 
+Possible bugs :
+- it's not interrupting anything : Check SpellCastAllowLatency + SecondsUntilSpellCastEndToInterruptStart to be smaller than the spell you want to interrupt. Check SecondsUntilSpellCastEndToInterruptEnd to be small enough. 
+- it's interrupting even instant cast spells : Check SecondsUntilSpellCastEndToInterruptStart to be larger than 1 second
+
+Q : What wow version can i use it ?
+A : I tested on 4.3.4. In theory it should work on 3.x, 5.x, 6.x also. Might need to change the "KickBot.toc" for it
+
+Q : Can it be detected by blizzard ?
+A : In theory this uses same method as for example mouse with macro. If you get banned you should make a complaint ticket. Ofc if start abusing the bot by interrupting instant cast spells than you might get in trouble
+
+Q : Anything you recommend to not get reported by other players?
+A : Add a random factor to it. Do not use it always at the same cast bar position and maybe do not interrupt every same spell...
+
+Q : Can i use it to interrupt focus target casts ?
+A : Yes. Make an apropriate macro for it
+
+Q : Can i improve it to become a PQR bot ?
+A : This was initially a PQR bot, i nerfed it to a kickbot
+
+Q : Is there a way to run this bot without autoit ?
+A : Yes, you can compile it to an exe
+
+Q : My interrupt spell is missing from a list, how do i add it ?
+A : Edit "KickBot.lua" and add your spell there
 Q : Can i use advanced scripting in AU3 ? 
 A : Yes, you can try to do fancy stuff like send multiple keys. Example : target your focus target, cast a spell, target arena1 target cast another spell, retarget first target. All done by sending a list of key combinations for 1 single LUA feedback
 
