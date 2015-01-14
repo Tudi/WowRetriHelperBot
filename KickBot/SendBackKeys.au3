@@ -14,6 +14,7 @@ global $RGBStep = 4
 global $FirstValidRGB = 1 * $RGBStep
 global $SendKeyForMainTarget[20]
 global $SendKeyForFocusTarget[20]
+global $SendKeyForArenaTarget[6][20]
 global $ExpectedLUAIdleValue = 0x0010FF80
 
 ; the list of spell names is in the same order as in KickBot.lua. KickBot.lua will send us the index to this vector.
@@ -43,7 +44,8 @@ $SendKeyForFocusTarget[8] = "="		;Spear Hand Strike
 $SendKeyForFocusTarget[9] = "="		;Mind Freeze
 $SendKeyForFocusTarget[10] = "="	;Strangulate
 $SendKeyForFocusTarget[11] = "-"	;Hammer of Justice
-global $MaxIndexInVector = UBound( $SendKeyForMainTarget )
+
+$SendKeyForArenaTarget[0][0] = "{f9}"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Anything below should be working without any changes. If not.....it's bad
@@ -126,16 +128,34 @@ func EventImageFound( $SpellNameIndex, $TargetIndex )
 		return
 	endif
 	
-	if( $TargetIndex > 6 ) then
+	if( $TargetIndex > 6 or $SpellNameIndex < 0 or $SpellNameIndex >= 20 ) then
 		return
 	endif
 	
-	if( $TargetIndex == 1 and $SpellNameIndex >= 0 and $SpellNameIndex < UBound( $SendKeyForFocusTarget ) and $SendKeyForFocusTarget[ $SpellNameIndex ] ) then
-		Send( $SendKeyForFocusTarget[ $SpellNameIndex ] )
-;		Send( "{ENTER}" & "1 1) target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKeyForFocusTarget[ $SpellNameIndex ] & " {ENTER}" )	
-	elseif( $SpellNameIndex >= 0 and $SpellNameIndex < UBound( $SendKeyForMainTarget ) and $SendKeyForMainTarget[ $SpellNameIndex ] ) then 
-		Send( $SendKeyForMainTarget[ $SpellNameIndex ] )
-;		Send( "{ENTER}" & "2 2) target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKeyForMainTarget[ $SpellNameIndex ] & " {ENTER}" )	
+	local $SendKey = ""
+	
+	; focustarget
+	if( $TargetIndex == 1 and $SendKeyForFocusTarget[ $SpellNameIndex ] ) then
+		$SendKey = $SendKeyForFocusTarget[ $SpellNameIndex ] 
+	; arena oponents
+	elseif( $TargetIndex == 2 and $SendKeyForArenaTarget[0][ $SpellNameIndex ] ) then
+		$SendKey = $SendKeyForArenaTarget[0][ $SpellNameIndex ] 
+	elseif( $TargetIndex == 3 and $SendKeyForArenaTarget[1][ $SpellNameIndex ] ) then
+		$SendKey = $SendKeyForArenaTarget[1][ $SpellNameIndex ]
+	elseif( $TargetIndex == 4 and $SendKeyForArenaTarget[2][ $SpellNameIndex ] ) then
+		$SendKey = $SendKeyForArenaTarget[2][ $SpellNameIndex ]
+	elseif( $TargetIndex == 5 and $SendKeyForArenaTarget[3][ $SpellNameIndex ] ) then
+		$SendKey = $SendKeyForArenaTarget[3][ $SpellNameIndex ]
+	elseif( $TargetIndex == 6 and $SendKeyForArenaTarget[4][ $SpellNameIndex ] ) then
+		$SendKey = $SendKeyForArenaTarget[4][ $SpellNameIndex ]
+	;direct target
+	elseif( $SendKeyForMainTarget[ $SpellNameIndex ] ) then 
+		$SendKey = $SendKeyForMainTarget[ $SpellNameIndex ]
+	endif
+	
+	if( $SendKey <> "" ) then
+		Send( $SendKey )
+;		Send( "{ENTER}" & "2 2) target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKey & " {ENTER}" )	
 	endif
 endfunc
 

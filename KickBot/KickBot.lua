@@ -7,7 +7,7 @@ local DoNotInterruptPVPSpellWithCastTimeLessThan = 1501	-- i managed to interrup
 -- set this to 0 to disable NPC spell interrupts
 local AllowAnyNPCSpellInterrupt = 1
 local AllowAnyPlayerSpellInterrupt = 1
-local SpellNamesCanInterruptOnPlayers = "|Fireball||Frostbolt|"	-- local SpellNamesCanInterruptOnPlayers = "|Fireball||Frostbolt|"
+local SpellNamesCanInterruptOnPlayers = ""	-- local SpellNamesCanInterruptOnPlayers = "|Fireball||Frostbolt|"
 local SpellNamesCanNotInterrupt = ""
 
 -- listing possible texts here so we can take screenshots of them using autoit
@@ -222,16 +222,16 @@ function KickBot_onUpdate( )
 		return
 	elseif( AdviseNextBestActionInterrupt( 1 ) == 1 ) then	-- focus
 		return
---	elseif( AdviseNextBestActionInterrupt( 2 ) == 1 ) then	-- arena1
---		return
---	elseif( AdviseNextBestActionInterrupt( 3 ) == 1 ) then	-- arena2
---		return
---	elseif( AdviseNextBestActionInterrupt( 4 ) == 1 ) then	-- arena3
---		return
---	elseif( AdviseNextBestActionInterrupt( 5 ) == 1 ) then	-- arena4
---		return
---	elseif( AdviseNextBestActionInterrupt( 6 ) == 1 ) then	-- arena5
---		return
+	elseif( AdviseNextBestActionInterrupt( 2 ) == 1 ) then	-- arena1
+		return
+	elseif( AdviseNextBestActionInterrupt( 3 ) == 1 ) then	-- arena2
+		return
+	elseif( AdviseNextBestActionInterrupt( 4 ) == 1 ) then	-- arena3
+		return
+	elseif( AdviseNextBestActionInterrupt( 5 ) == 1 ) then	-- arena4
+		return
+	elseif( AdviseNextBestActionInterrupt( 6 ) == 1 ) then	-- arena5
+		return
 	else
 		SignalBestAction( 0 )
 	end
