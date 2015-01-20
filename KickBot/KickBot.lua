@@ -1,14 +1,52 @@
--- Able to cast spells that have lower than this as cooldown. Spell Queue system to maximize DPS
-local SpellCastAllowLatency = 0.35
+-- Able to cast spells that have lower than this as cooldown. Spell Queue system to maximize interrupt precision. My avg latency is 0.35. You can experiment what is best for you
+local SpellCastAllowLatency = 0.01
 -- Seconds before a spell cast would end to interrupt the cast. SecondsUntilSpellCastEndToInterruptStart - SecondsUntilSpellCastEndToInterruptEnd = the timeframe until the addon can interrupt a spell. Make it large enough to work for you
 local SecondsUntilSpellCastEndToInterruptStart = 1.5	-- put as small as possible to catch all interruptable spells. Needs to be larger than SecondsUntilSpellCastEndToInterruptEnd
 local SecondsUntilSpellCastEndToInterruptEnd = 0.5	-- due to global cooldown + addon latency + game latency if you put this to a too small value the interrupt might fail and you wasted interrupt spell
-local DoNotInterruptPVPSpellWithCastTimeLessThan = 1501	-- i managed to interrupt 3 instant cast spells in a row. That is definetely getting reported as cheater
+local DoNotInterruptPVPSpellWithCastTimeLessThan = 1002	-- i managed to interrupt 3 instant cast spells in a row. That is definetely getting reported as cheater
 -- set this to 0 to disable NPC spell interrupts
 local AllowAnyNPCSpellInterrupt = 1
+-- set this to 0 if you want to specify a list of spells to interrupt for players
 local AllowAnyPlayerSpellInterrupt = 1
-local SpellNamesCanInterruptOnPlayers = ""	-- local SpellNamesCanInterruptOnPlayers = "|Fireball||Frostbolt|"
+-- white list of spell names. The ones that LUA is allowed to automatically interrupt. This list is only used if you set AllowAnyPlayerSpellInterrupt=0
+local SpellNamesCanInterruptOnPlayers = ""	-- local SpellNamesCanInterruptOnPlayers = "Fireball|Frostbolt"
+-- black list of spells names. The ones that LUA is NOT allowed to automatically interrupt. This list is always used
 local SpellNamesCanNotInterrupt = ""
+-- do not autocast interrupt spells unless target is bursting. A value greater than 0 represents the number of buffs the target needs to have to be considered bursting
+local OnlyInterruptOnBurst = 0
+-- leave this variable alone. It's just a counter :P
+local NumberOfBurstAuras = 0
+-- list of possible buffs that target needs to have to be considered bursting
+local BurstAuraList = {}
+BurstAuraList[NumberOfBurstAuras] = "Call of Conquest"
+NumberOfBurstAuras = NumberOfBurstAuras + 1
+BurstAuraList[NumberOfBurstAuras] = "Call of Victory"
+NumberOfBurstAuras = NumberOfBurstAuras + 1
+BurstAuraList[NumberOfBurstAuras] = "Call of Dominance"
+NumberOfBurstAuras = NumberOfBurstAuras + 1
+BurstAuraList[NumberOfBurstAuras] = "Screaming Spirits"
+NumberOfBurstAuras = NumberOfBurstAuras + 1
+BurstAuraList[NumberOfBurstAuras] = "Sword Technique"
+NumberOfBurstAuras = NumberOfBurstAuras + 1
+BurstAuraList[NumberOfBurstAuras] = "Convulsive Shadows"
+NumberOfBurstAuras = NumberOfBurstAuras + 1
+BurstAuraList[NumberOfBurstAuras] = "Lub-Dub"
+NumberOfBurstAuras = NumberOfBurstAuras + 1
+--BurstAuraList[NumberOfBurstAuras] = "Arcane Missiles!"	-- i'm debugging the script, chill
+--NumberOfBurstAuras = NumberOfBurstAuras + 1
+-- list of Buffs the target should NOT have
+local NumberOfCounterAuras = 0
+local CounterAuraList = {}
+CounterAuraList[NumberOfCounterAuras] = "Mass Spell Reflection"
+NumberOfCounterAuras = NumberOfCounterAuras + 1
+CounterAuraList[NumberOfCounterAuras] = "Spell Reflection"
+NumberOfCounterAuras = NumberOfCounterAuras + 1
+CounterAuraList[NumberOfCounterAuras] = "Deterrence"
+NumberOfCounterAuras = NumberOfCounterAuras + 1
+CounterAuraList[NumberOfCounterAuras] = "Grounding Totem"
+NumberOfCounterAuras = NumberOfCounterAuras + 1
+--CounterAuraList[NumberOfCounterAuras] = "Arcane Brilliance" -- i'm debugging the script, chill
+--NumberOfCounterAuras = NumberOfCounterAuras + 1
 
 -- listing possible texts here so we can take screenshots of them using autoit
 local TargetTypes = {}
@@ -20,67 +58,44 @@ TargetTypes[4] = "arena3"
 TargetTypes[5] = "arena4"
 TargetTypes[6] = "arena5"
 local SpellNames = {}
+local SpellNameTargetTypeKeyBinds = {}
 local SpellColorRGB = {}
-local SpellRGBStep = 4		-- 255 / 15 = 16
+local SpellRGBStep = 4		
 local IndexCounter = 0
+
+function RegisterKickerSpell( SpellName, MainTargetKeyBind, FocusTargetKeybind, Arena1KeyBind, Arena2KeyBind, Arena3KeyBind, Arena4KeyBind, Arena5KeyBind )
+	SpellNames[IndexCounter] = SpellName
+	SpellColorRGB[IndexCounter] = IndexCounter * SpellRGBStep
+	SpellNameTargetTypeKeyBinds[0 * 100 + IndexCounter] = string.byte( MainTargetKeyBind )
+	SpellNameTargetTypeKeyBinds[1 * 100 + IndexCounter] = string.byte( FocusTargetKeybind )
+	SpellNameTargetTypeKeyBinds[2 * 100 + IndexCounter] = string.byte( Arena1KeyBind )
+	SpellNameTargetTypeKeyBinds[3 * 100 + IndexCounter] = string.byte( Arena2KeyBind )
+	SpellNameTargetTypeKeyBinds[4 * 100 + IndexCounter] = string.byte( Arena3KeyBind )
+	SpellNameTargetTypeKeyBinds[5 * 100 + IndexCounter] = string.byte( Arena4KeyBind )
+	SpellNameTargetTypeKeyBinds[6 * 100 + IndexCounter] = string.byte( Arena5KeyBind )
+	IndexCounter = IndexCounter + 1
+end
+
 -- when we do nothing we will show this
-SpellNames[IndexCounter] = "Waiting for the moonshine"
-SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
-IndexCounter = IndexCounter + 1
+RegisterKickerSpell( "Idle state(do not change me)", "", "", "", "", "", "", "" )
 -- interrupt spells
 local InterruptSpellsStartAt = IndexCounter
-
-SpellNames[IndexCounter] = "Fist of Justice"
-SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
-IndexCounter = IndexCounter + 1
-
-SpellNames[IndexCounter] = "Rebuke"
-SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
-IndexCounter = IndexCounter + 1
-
-SpellNames[IndexCounter] = "Arcane Torrent"
-SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
-IndexCounter = IndexCounter + 1
-
-SpellNames[IndexCounter] = "Counterspell"
-SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
-IndexCounter = IndexCounter + 1
-
-SpellNames[IndexCounter] = "Wind Shear"
-SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
-IndexCounter = IndexCounter + 1
-
-SpellNames[IndexCounter] = "Kick"
-SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
-IndexCounter = IndexCounter + 1
-
-SpellNames[IndexCounter] = "Counter Shot"
-SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
-IndexCounter = IndexCounter + 1
-
-SpellNames[IndexCounter] = "Pummel"
-SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
-IndexCounter = IndexCounter + 1
-
-SpellNames[IndexCounter] = "Spear Hand Strike"
-SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
-IndexCounter = IndexCounter + 1
-
-SpellNames[IndexCounter] = "Mind Freeze"
-SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
-IndexCounter = IndexCounter + 1
-
-SpellNames[IndexCounter] = "Strangulate"
-SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
-IndexCounter = IndexCounter + 1
-
-SpellNames[IndexCounter] = "Hammer of Justice"
-SpellColorRGB[IndexCounter] = IndexCounter*SpellRGBStep
-IndexCounter = IndexCounter + 1
-
---print("Index Counter : "..IndexCounter )
-
+-- add spells that LUA should try to use to interrupt enemy spell cast. Also add the keybind LUA should use for that specific target type to cast the spell. 
+-- the order of the spells will say what the LUA should try to cast first. You might want to cast Rebuke more than Hammer of Justice...
+RegisterKickerSpell( "Rebuke", '8', '-', '=', '', '', '', '' )
+RegisterKickerSpell( "Fist of Justice", '9', '', '', '', '', '', '' )
+RegisterKickerSpell( "Hammer of Justice", '9', '', '', '', '', '', '' )
+RegisterKickerSpell( "Arcane Torrent", '0', '', '', '', '', '', '' )
+RegisterKickerSpell( "Counterspell", '8', '', '', '', '', '', '' )
+RegisterKickerSpell( "Wind Shear", '8', '', '', '', '', '', '' )
+RegisterKickerSpell( "Kick", '8', '9', '0', '-', '=', '', '' )
+RegisterKickerSpell( "Counter Shot", '8', '9', '0', '-', '=', '', '' )
+RegisterKickerSpell( "Pummel", '8', '9', '0', '-', '=', '', '' )
+RegisterKickerSpell( "Spear Hand Strike", '8', '9', '0', '-', '=', '', '' )
+RegisterKickerSpell( "Mind Freeze", '8', '9', '0', '-', '=', '', '' )
+RegisterKickerSpell( "Strangulate", '8', '9', '0', '-', '=', '', '' )
 local InterruptSpellsEndAt = IndexCounter
+--print("Index Counter : "..IndexCounter )
 
 function KickBot_OnLoad(self)
 	KickBotFrame = self
@@ -109,13 +124,16 @@ local function SignalBestAction( Index, TargetTypeIndex )
 		KickBotFrame.texture:SetVertexColor( 16 / 255.0, 255 / 255.0, 128 / 255.0, 1 ) -- magic number to allow AU3 to find it
 		DebugLastValue = -1
 	elseif( Index < IndexCounter ) then
-		local RGBColor = SpellColorRGB[ Index ] / 255.0
-		local TargetTypeRGB = ( TargetTypeIndex + 1 ) * SpellRGBStep / 255.0
-		KickBotFrame.texture:SetVertexColor( TargetTypeRGB, RGBColor, RGBColor, 1 )
---		if( DebugLastValue ~= Index ) then
---			print( "Change state to "..Index.." target "..TargetTypeIndex )
---		end
+		local SpellNameIndex = SpellColorRGB[ Index ] / 255.0
+		local TargetType = ( TargetTypeIndex + 1 ) * SpellRGBStep / 255.0
+		local KeyBindToPress = SpellNameTargetTypeKeyBinds[ Index + TargetTypeIndex * 100 ] / 255.0
+		KickBotFrame.texture:SetVertexColor( TargetType, SpellNameIndex, KeyBindToPress, 1 )
+--[[		
+		if( DebugLastValue ~= Index ) then
+			print( "Change state to "..SpellNameIndex.." target "..TargetTypeIndex.." KeyBind "..KeyBindToPress.." Index "..Index.." ttindex "..TargetTypeIndex )
+		end
 		DebugLastValue = Index
+		]]--
 	end
 end
 
@@ -155,7 +173,7 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 	elseif( AllowAnyPlayerSpellInterrupt == 1 and isPlayer == 1 ) then
 --		print( "Can interrupt all target player spells" )
 		SpellIsInWhiteList = 1
-	elseif( string.find( SpellNamesCanInterruptOnPlayers, "(|"..SpellName.."|)" ) ~= nil ) then
+	elseif( string.find( SpellNamesCanInterruptOnPlayers, "("..SpellName..")" ) ~= nil ) then
 --		print( "Spell "..SpellName.." can be interrupted because of whitelist" )
 		SpellIsInWhiteList = 1
 	end
@@ -165,8 +183,8 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 		return
 	end
 	
-	if( string.find( SpellNamesCanNotInterrupt, "(|"..SpellName.."|)" ) ~= nil ) then
---local s1,s2,s3,s4 = string.find( SpellNamesCanNotInterrupt, "(|"..SpellName.."|)" )
+	if( string.find( SpellNamesCanNotInterrupt, "("..SpellName..")" ) ~= nil ) then
+--local s1,s2,s3,s4 = string.find( SpellNamesCanNotInterrupt, "("..SpellName..")" )
 --print( "s1 "..tostring(s1).." s2 "..tostring(s2).." ".." s3 "..tostring(s3).." s4 "..tostring(s4)..SpellNamesCanNotInterrupt )
 --		print("spell "..SpellName.." is in blacklist " )
 		return
@@ -180,10 +198,44 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 			return
 		end
 	end
+	
 	if( cspell ) then
 		RemainingSecondsToFinishCast = SecondsUntilSpellCastEndToInterruptStart
 --		 print("channeling : "..cspell.." cstartTime "..tostring(cstartTime).." cendTime "..tostring(cendTime).." cInterruptDeny "..tostring(cInterruptDeny).." RemainingSecondsToFinishCast "..tostring(RemainingSecondsToFinishCast)..".");
 	end
+	
+	for N=0,NumberOfCounterAuras-1,1 do
+		local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( unit, CounterAuraList[N] )
+		if( name ~= nil ) then
+--			print(" target has counter aura "..tostring(name).." can't interrupt now.")
+			return
+		end
+	end
+	
+	if( OnlyInterruptOnBurst > 0 ) then
+		local TargetHasBurstAuras = 0
+		for N=0,NumberOfBurstAuras-1,1 do
+			local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( unit, BurstAuraList[N] )
+			if( name ~= nil ) then
+--				print(" target has burst aura "..tostring(name) )
+				TargetHasBurstAuras = TargetHasBurstAuras + 1
+			end
+		end
+		if( TargetHasBurstAuras < OnlyInterruptOnBurst ) then
+--			print(" We need "..OnlyInterruptOnBurst.." burst auras, but target only had "..TargetHasBurstAuras )
+			return
+		end
+	end
+	
+	for N=0,NumberOfCounterAuras-1,1 do
+		print(" check counter aura "..tostring(CounterAuraList[N])..".")
+		local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( unit, CounterAuraList[N] )
+		if( name ~= nil ) then
+--			print(" target has counter aura "..tostring(name).." can't interrupt now.")
+			return
+		end
+	end
+	
 	if( RemainingSecondsToFinishCast <= SecondsUntilSpellCastEndToInterruptStart and RemainingSecondsToFinishCast >= SecondsUntilSpellCastEndToInterruptEnd ) then
 --			print( InterruptSpellsStartAt.." "..InterruptSpellsEndAt )
 			for N=InterruptSpellsStartAt,InterruptSpellsEndAt,1 do
