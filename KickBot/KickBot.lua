@@ -66,7 +66,7 @@ local SpellColorRGB = {}
 local SpellRGBStep = 4		
 local IndexCounter = 0
 
-function RegisterKickerSpell( SpellName, MainTargetKeyBind, FocusTargetKeybind, Arena1KeyBind, Arena2KeyBind, Arena3KeyBind, Arena4KeyBind, Arena5KeyBind )
+local function RegisterKickerSpell( SpellName, MainTargetKeyBind, FocusTargetKeybind, Arena1KeyBind, Arena2KeyBind, Arena3KeyBind, Arena4KeyBind, Arena5KeyBind )
 	SpellNames[IndexCounter] = SpellName
 	SpellColorRGB[IndexCounter] = IndexCounter * SpellRGBStep
 	SpellNameTargetTypeKeyBinds[0 * 100 + IndexCounter] = string.byte( MainTargetKeyBind )
@@ -117,6 +117,11 @@ function KickBot_OnLoad(self)
 	KickBotFrame.text:SetAllPoints();
 	
     print("KickBot loaded.Don't forget to start AU3 script. To stop AU3 press '['. To pause AU3 press '\\'.");
+end
+
+local function SendToAU3KeyPress( AsciiChar )
+		local KeyToPress = string.byte( AsciiChar ) / 255.0
+		KickBotFrame.texture:SetVertexColor( SpellRGBStep / 255.0, SpellRGBStep / 255.0, KeyToPress, 1 )
 end
 
 local DebugLastValue = -1
@@ -284,7 +289,40 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 	return 0
 end
 
+-- Right now this is only added as a demo function !
 function AdviseNextBestActionPQR()
+
+--[[
+	if( time() % 10 == 0 ) then 
+		SendToAU3KeyPress( '5' )
+		return 1
+	end
+	]]--
+	
+--[[
+	-- if divine storm is buffed than try to use it 
+	local unit = "target";
+--	 print(" exists "..tostring(UnitExists( unit )).." canattack "..tostring(UnitCanAttack( "player", unit )).." visible "..tostring(UnitIsVisible(unit)).." dead "..tostring(UnitIsDeadOrGhost(unit)));
+	if( UnitExists( unit ) == true and UnitCanAttack( "player", unit ) == true and UnitIsVisible(unit) == true and UnitIsDeadOrGhost( unit ) == false and ( InCombatLockdown() == 1 or checkCombat() == 1 ) ) then
+		local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( "player", "Divine Crusader" )
+		if( spellId ~= nil and spellId > 0 ) then 
+			local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( "player", "Final Verdict" )
+			if( spellId ~= nil and spellId > 0 ) then 
+--				print("we have Divine Crusader and final verdict");
+				local NextSpellName = "Divine Storm";
+				local usable, nomana = IsUsableSpell( NextSpellName )
+				local inRange = IsSpellInRange( "Rebuke", unit )	-- divine storm is AOE, but we want melee range
+				local start, duration, enabled = GetSpellCooldown( NextSpellName )
+--				print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inrange "..tostring(inRange).." cooldown "..tostring(duration).." isactive "..tostring(spellId)..".");
+				if( usable == true and nomana == false and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency ) then
+--					print( " advising : "..NextSpellName )
+					SendToAU3KeyPress( '5' )
+					return 1
+				end
+			end
+		end
+	end
+	]]--
 	return 0
 end
 
