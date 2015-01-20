@@ -23,6 +23,8 @@ How to check if it is working :
 Possible bugs :
 - it's not interrupting anything : Check SpellCastAllowLatency + SecondsUntilSpellCastEndToInterruptStart to be smaller than the spell you want to interrupt. Check SecondsUntilSpellCastEndToInterruptEnd to be small enough. 
 - it's interrupting even instant cast spells : Check SecondsUntilSpellCastEndToInterruptStart to be larger than 1 second
+- SendBackKeys.au3 can not find the LUA window : make sure that greenish box is not covered by some other wow window. It does not have any other overlays on it
+- SendBackKeys.au3 finds bad greenish pixel : manually set $LuaFramePosX, $LuaFramePosY variables
 
 
 Q : What wow version can i use it ?
@@ -38,7 +40,7 @@ Q : Anything you recommend to not get reported by other players?
 A : Add a random factor to it. Do not use it always at the same cast bar position and maybe do not interrupt every same spell...
 
 Q : Can i use it to interrupt focus target casts ?
-A : Yes. Make an apropriate macro for it. /cast @focustarget manlykick
+A : Yes. Make an apropriate macro for it. /cast @focus manlykick
 
 Q : Can i improve it to become a PQR bot ?
 A : This was initially a PQR bot, i nerfed it to a kickbot

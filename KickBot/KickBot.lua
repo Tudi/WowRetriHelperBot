@@ -156,18 +156,20 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 		print(" Target is casting spell "..cspell.." interruptdeny '"..tostring(cInterruptDeny).."' seconds until finished "..tostring(RemainingSecondsToFinishCast).." we want "..SecondsUntilSpellCastEndToInterruptStart );
 	end
 	]]--
-	
-	local isPlayer = UnitPlayerControlled( unit )
 
+	-- if no spell are getting casted by this target than we have nothing to do 
 	if( not spell and not cspell ) then
 		return
 	end
 	
+	-- whatever spell it is, we just use the name of it
 	local SpellName = spell
 	if( SpellName == nil ) then 
 		SpellName = cspell
 	end
 	
+	-- is the spell whitelisted ?
+	local isPlayer = UnitPlayerControlled( unit )
 	local SpellIsInWhiteList = 0
 	-- Deny all NPC spell interrupts. But WHY !?!?!?!
 	if( AllowAnyNPCSpellInterrupt == 1 and isPlayer ~= 1 ) then
@@ -180,12 +182,12 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 --		print( "Spell "..SpellName.." can be interrupted because of whitelist" )
 		SpellIsInWhiteList = 1
 	end
-	
 	if( SpellIsInWhiteList ~= 1 ) then
 --		print("spell "..SpellName.." is not in whitelist " )
 		return
 	end
 	
+	-- is the spell blacklisted ?
 	if( string.find( SpellNamesCanNotInterrupt, "("..SpellName..")" ) ~= nil ) then
 --local s1,s2,s3,s4 = string.find( SpellNamesCanNotInterrupt, "("..SpellName..")" )
 --print( "s1 "..tostring(s1).." s2 "..tostring(s2).." ".." s3 "..tostring(s3).." s4 "..tostring(s4)..SpellNamesCanNotInterrupt )
@@ -193,6 +195,7 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 		return
 	end
 	
+	-- in WOD even instant cast spells have 1 second cast time. I do not advise interrupting these. It's unhuman to interrupt most sub 1 second spell casts
 	local RemainingSecondsToFinishCast = -1
 	if( spell and InterruptDeny == false ) then
 		RemainingSecondsToFinishCast = endTime/1000 - GetTime()
@@ -202,11 +205,13 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 		end
 	end
 	
+	-- channeled spells should be interrupted as soon as possible.
 	if( cspell ) then
 		RemainingSecondsToFinishCast = SecondsUntilSpellCastEndToInterruptStart
 --		 print("channeling : "..cspell.." cstartTime "..tostring(cstartTime).." cendTime "..tostring(cendTime).." cInterruptDeny "..tostring(cInterruptDeny).." RemainingSecondsToFinishCast "..tostring(RemainingSecondsToFinishCast)..".");
 	end
 	
+	-- Optional : Only interrupt spells if target is burst casting. They trinket + talent proc than cast biggest dmg spell....
 	if( OnlyInterruptOnBurst > 0 ) then
 		local TargetHasBurstAuras = 0
 		for N=0,NumberOfBurstAuras-1,1 do
@@ -222,6 +227,7 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 		end
 	end
 	
+	-- do not try to interrupt(stun?) target if he has spell reflect on him. Wait for the effect to expire
 	for N=0,NumberOfCounterAuras-1,1 do
 --		print(" check counter aura "..tostring(CounterAuraList[N])..".")
 		local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( unit, CounterAuraList[N] )
@@ -248,6 +254,7 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 --						print( " advising : "..NextSpellName.." on target (string) '"..unit.."'" );
 						AllInterruptConditionsAreMet = 1
 					end
+					-- to avoid fake casts, you might want to check if target is casting a spell that he is specced in
 					if( AllInterruptConditionsAreMet == 1 and ConditionalInterruptChecked == 0 ) then
 						ConditionalInterruptChecked = 1
 						if( ConditionalInterrupts[ SpellName ] ~= nil ) then
@@ -279,7 +286,7 @@ end
 
 local DebugTestAll = -1
 function KickBot_onUpdate( )
-	
+	--[[
 	if( DebugTestAll ~= -1 ) then 
 		SignalBestAction( DebugTestAll, DebugTestAll )
 		if( PrevTime ~= time() ) then DebugTestAll = DebugTestAll + 1 end
@@ -287,6 +294,7 @@ function KickBot_onUpdate( )
 		if( DebugTestAll >= IndexCounter ) then DebugTestAll = 0 end
 		return
 	end
+	]]--
 
 	-- interrupt target spell casting if possible
 	if( AdviseNextBestActionInterrupt( 0 ) == 1 ) then	-- target
