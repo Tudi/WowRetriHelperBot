@@ -284,6 +284,10 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 	return 0
 end
 
+function AdviseNextBestActionPQR()
+	return 0
+end
+
 local DebugTestAll = -1
 function KickBot_onUpdate( )
 	--[[
@@ -310,6 +314,8 @@ function KickBot_onUpdate( )
 	elseif( AdviseNextBestActionInterrupt( 5 ) == 1 ) then	-- arena4
 		return
 	elseif( AdviseNextBestActionInterrupt( 6 ) == 1 ) then	-- arena5
+		return
+	elseif( AdviseNextBestActionPQR( ) == 1 ) then	-- this is not used, it's only put here as demo for people who want to use the bot for DPS / class specific scripts also
 		return
 	else
 		SignalBestAction( 0 )
