@@ -47,6 +47,9 @@ CounterAuraList[NumberOfCounterAuras] = "Grounding Totem"
 NumberOfCounterAuras = NumberOfCounterAuras + 1
 --CounterAuraList[NumberOfCounterAuras] = "Arcane Brilliance" -- i'm debugging the script, chill
 --NumberOfCounterAuras = NumberOfCounterAuras + 1
+-- Only interrupt spells if target also has one of these buffs, You can separate buff names by , if you want to check one of more than 1 buffs
+local ConditionalInterrupts = {}
+--ConditionalInterrupts["Fireball"] = "Arcane Brilliance,Arcane Missiles!" -- i'm debugging the script, chill
 
 -- listing possible texts here so we can take screenshots of them using autoit
 local TargetTypes = {}
@@ -204,14 +207,6 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 --		 print("channeling : "..cspell.." cstartTime "..tostring(cstartTime).." cendTime "..tostring(cendTime).." cInterruptDeny "..tostring(cInterruptDeny).." RemainingSecondsToFinishCast "..tostring(RemainingSecondsToFinishCast)..".");
 	end
 	
-	for N=0,NumberOfCounterAuras-1,1 do
-		local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( unit, CounterAuraList[N] )
-		if( name ~= nil ) then
---			print(" target has counter aura "..tostring(name).." can't interrupt now.")
-			return
-		end
-	end
-	
 	if( OnlyInterruptOnBurst > 0 ) then
 		local TargetHasBurstAuras = 0
 		for N=0,NumberOfBurstAuras-1,1 do
@@ -228,7 +223,7 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 	end
 	
 	for N=0,NumberOfCounterAuras-1,1 do
-		print(" check counter aura "..tostring(CounterAuraList[N])..".")
+--		print(" check counter aura "..tostring(CounterAuraList[N])..".")
 		local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( unit, CounterAuraList[N] )
 		if( name ~= nil ) then
 --			print(" target has counter aura "..tostring(name).." can't interrupt now.")
@@ -236,6 +231,7 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 		end
 	end
 	
+	local ConditionalInterruptChecked = 0
 	if( RemainingSecondsToFinishCast <= SecondsUntilSpellCastEndToInterruptStart and RemainingSecondsToFinishCast >= SecondsUntilSpellCastEndToInterruptEnd ) then
 --			print( InterruptSpellsStartAt.." "..InterruptSpellsEndAt )
 			for N=InterruptSpellsStartAt,InterruptSpellsEndAt,1 do
@@ -247,8 +243,31 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 --					local inRange2 = UnitInRange( unit )	--40 yards range check, should be the same as spell in range, only that AOE spells have radius and not range
 					local start, duration, enabled = GetSpellCooldown( NextSpellName )
 --					print(" "..NextSpellName.." usable "..tostring(usable).." nomana "..tostring(nomana).." inRange "..tostring(inRange).." coldown "..tostring(duration)..".")
+					local AllInterruptConditionsAreMet = 0
 					if( ( usable == true or usable == 1 ) and ( nomana == false or nomana == nil ) and ( inRange == 1 or inrange == nil ) and duration <= SpellCastAllowLatency ) then
 --						print( " advising : "..NextSpellName.." on target (string) '"..unit.."'" );
+						AllInterruptConditionsAreMet = 1
+					end
+					if( AllInterruptConditionsAreMet == 1 and ConditionalInterruptChecked == 0 ) then
+						ConditionalInterruptChecked = 1
+						if( ConditionalInterrupts[ SpellName ] ~= nil ) then
+--							print( " target needs to have one of these buffs : "..ConditionalInterrupts[ SpellName ].." to interrupt spell '"..SpellName.."'" );
+							local FoundAnyBuff = 0
+							local RequiredBuffsList = { strsplit( ",", ConditionalInterrupts[ SpellName ] ) }
+							for i, RequiredBuff in ipairs( RequiredBuffsList ) do
+--								print( "Checking buff "..RequiredBuff.." on target " )
+								local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( unit, RequiredBuff )
+								if( name ~= nil ) then
+									FoundAnyBuff = FoundAnyBuff + 1
+									break
+								end
+							end	
+							if( FoundAnyBuff == 0 ) then
+								AllInterruptConditionsAreMet = 0
+							end
+						end
+					end
+					if( AllInterruptConditionsAreMet == 1 ) then
 						SignalBestAction( N, TargetTypeIndex );
 						return 1
 					end
