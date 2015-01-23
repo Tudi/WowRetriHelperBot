@@ -1,7 +1,10 @@
-## Interface: 30000 
+## Interface: 30000
 ## Title: KickBot
+## Author: Tudi
 ## Version: 1.0.1
 ## Notes: Watch your target / focustarget and cast spells accordingly
-## Author: Tudi
+## DefaultState: Enabled
+## LoadOnDemand: 0
+## SavedVariablesPerCharacter: SpellNameKeyBinds
 KickBot.lua
 KickBot.xml

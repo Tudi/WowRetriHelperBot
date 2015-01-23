@@ -1,4 +1,4 @@
--- Able to cast spells that have lower than this as cooldown. Spell Queue system to maximize interrupt precision. My avg latency is 0.35. You can experiment what is best for you
+﻿-- Able to cast spells that have lower than this as cooldown. Spell Queue system to maximize interrupt precision. My avg latency is 0.35. You can experiment what is best for you
 local SpellCastAllowLatency = 0.01
 -- Seconds before a spell cast would end to interrupt the cast. SecondsUntilSpellCastEndToInterruptStart - SecondsUntilSpellCastEndToInterruptEnd = the timeframe until the addon can interrupt a spell. Make it large enough to work for you
 local SecondsUntilSpellCastEndToInterruptStart = 1.5	-- put as small as possible to catch all interruptable spells. Needs to be larger than SecondsUntilSpellCastEndToInterruptEnd
@@ -60,50 +60,112 @@ TargetTypes[3] = "arena2"
 TargetTypes[4] = "arena3"
 TargetTypes[5] = "arena4"
 TargetTypes[6] = "arena5"
-local SpellNames = {}
+--local SpellNames = {}
 local SpellNameTargetTypeKeyBinds = {}
-local SpellColorRGB = {}
+--local SpellPlayerClass = {}
+--local SpellColorRGB = {}
 local SpellRGBStep = 4		
 local IndexCounter = 0
 
-local function RegisterKickerSpell( SpellName, MainTargetKeyBind, FocusTargetKeybind, Arena1KeyBind, Arena2KeyBind, Arena3KeyBind, Arena4KeyBind, Arena5KeyBind )
-	SpellNames[IndexCounter] = SpellName
-	SpellColorRGB[IndexCounter] = IndexCounter * SpellRGBStep
-	SpellNameTargetTypeKeyBinds[0 * 100 + IndexCounter] = string.byte( MainTargetKeyBind )
-	SpellNameTargetTypeKeyBinds[1 * 100 + IndexCounter] = string.byte( FocusTargetKeybind )
-	SpellNameTargetTypeKeyBinds[2 * 100 + IndexCounter] = string.byte( Arena1KeyBind )
-	SpellNameTargetTypeKeyBinds[3 * 100 + IndexCounter] = string.byte( Arena2KeyBind )
-	SpellNameTargetTypeKeyBinds[4 * 100 + IndexCounter] = string.byte( Arena3KeyBind )
-	SpellNameTargetTypeKeyBinds[5 * 100 + IndexCounter] = string.byte( Arena4KeyBind )
-	SpellNameTargetTypeKeyBinds[6 * 100 + IndexCounter] = string.byte( Arena5KeyBind )
+local SPELL_NAME_INDEX = 7
+
+local function RegisterKickerSpell( SpellName, MainTargetKeyBind, FocusTargetKeybind, Arena1KeyBind, Arena2KeyBind, Arena3KeyBind, Arena4KeyBind, Arena5KeyBind, PlayerClass )
+--	SpellNames[IndexCounter] = SpellName
+	SpellNameTargetTypeKeyBinds[0 + IndexCounter * 100 ] = string.byte( MainTargetKeyBind )
+	SpellNameTargetTypeKeyBinds[1 + IndexCounter * 100 ] = string.byte( FocusTargetKeybind )
+	SpellNameTargetTypeKeyBinds[2 + IndexCounter * 100 ] = string.byte( Arena1KeyBind )
+	SpellNameTargetTypeKeyBinds[3 + IndexCounter * 100 ] = string.byte( Arena2KeyBind )
+	SpellNameTargetTypeKeyBinds[4 + IndexCounter * 100 ] = string.byte( Arena3KeyBind )
+	SpellNameTargetTypeKeyBinds[5 + IndexCounter * 100 ] = string.byte( Arena4KeyBind )
+	SpellNameTargetTypeKeyBinds[6 + IndexCounter * 100 ] = string.byte( Arena5KeyBind )
+	SpellNameTargetTypeKeyBinds[SPELL_NAME_INDEX + IndexCounter * 100 ] = SpellName
+	SpellNameTargetTypeKeyBinds[8 + IndexCounter * 100 ] = PlayerClass
+	SpellNameTargetTypeKeyBinds[9 + IndexCounter * 100 ] = IndexCounter * SpellRGBStep
+--	SpellPlayerClass[ IndexCounter ] = PlayerClass
+--	SpellColorRGB[IndexCounter] = IndexCounter * SpellRGBStep
 	IndexCounter = IndexCounter + 1
 end
 
--- when we do nothing we will show this
-RegisterKickerSpell( "Idle state(do not change me)", "", "", "", "", "", "", "" )
--- interrupt spells
-local InterruptSpellsStartAt = IndexCounter
--- add spells that LUA should try to use to interrupt enemy spell cast. Also add the keybind LUA should use for that specific target type to cast the spell. 
--- the order of the spells will say what the LUA should try to cast first. You might want to cast Rebuke more than Hammer of Justice...
-RegisterKickerSpell( "Rebuke", '8', '-', '=', '', '', '', '' )
-RegisterKickerSpell( "Fist of Justice", '9', '', '', '', '', '', '' )
-RegisterKickerSpell( "Hammer of Justice", '9', '', '', '', '', '', '' )
-RegisterKickerSpell( "Arcane Torrent", '0', '', '', '', '', '', '' )
-RegisterKickerSpell( "Counterspell", '8', '', '', '', '', '', '' )
-RegisterKickerSpell( "Wind Shear", '8', '', '', '', '', '', '' )
-RegisterKickerSpell( "Kick", '8', '9', '0', '-', '=', '', '' )
-RegisterKickerSpell( "Counter Shot", '8', '9', '0', '-', '=', '', '' )
-RegisterKickerSpell( "Pummel", '8', '9', '0', '-', '=', '', '' )
-RegisterKickerSpell( "Spear Hand Strike", '8', '9', '0', '-', '=', '', '' )
-RegisterKickerSpell( "Mind Freeze", '8', '9', '0', '-', '=', '', '' )
-RegisterKickerSpell( "Strangulate", '8', '9', '0', '-', '=', '', '' )
-local InterruptSpellsEndAt = IndexCounter
+local function LoadDefaultSettings()
+	IndexCounter = 0
+	
+	-- when we do nothing we will show this
+	RegisterKickerSpell( "Idle state(do not change me)", "", "", "", "", "", "", "" )
+	
+	-- interrupt spells
+	InterruptSpellsStartAt = IndexCounter
+
+	-- add spells that LUA should try to use to interrupt enemy spell cast. Also add the keybind LUA should use for that specific target type to cast the spell. 
+	-- the order of the spells will say what the LUA should try to cast first. You might want to cast Rebuke more than Hammer of Justice...
+	RegisterKickerSpell( "Rebuke", '8', '-', '=', '', '', '', '', "PALADIN" )
+	RegisterKickerSpell( "Fist of Justice", '9', '', '', '', '', '', '', "PALADIN" )
+	RegisterKickerSpell( "Hammer of Justice", '9', '', '', '', '', '', '', "PALADIN" )
+	RegisterKickerSpell( "Repentance", '8', '-', '=', '', '', '', '', "PALADIN" )
+	RegisterKickerSpell( "Avenger's Shield", '8', '-', '=', '', '', '', '', "PALADIN" )
+
+	RegisterKickerSpell( "Counterspell", '8', '9', '0', '', '', '', '', "MAGE" )
+	RegisterKickerSpell( "Deep Freeze", '8', '', '', '', '', '', '', "MAGE" )
+	RegisterKickerSpell( "Dragon's Breath", '8', '', '', '', '', '', '', "MAGE" )
+
+	RegisterKickerSpell( "Wind Shear", '8', '', '', '', '', '', '', "SHAMAN" )
+	RegisterKickerSpell( "Thunderstorm", '8', '', '', '', '', '', '', "SHAMAN" )
+
+	RegisterKickerSpell( "Kick", '8', '9', '0', '-', '=', '', '', "ROGUE" )
+	RegisterKickerSpell( "Blind", '8', '9', '0', '-', '=', '', '', "ROGUE" )
+	RegisterKickerSpell( "Kidney Shot", '8', '9', '0', '-', '=', '', '', "ROGUE" )
+	RegisterKickerSpell( "Cheap Shot", '8', '9', '0', '-', '=', '', '', "ROGUE" )
+	RegisterKickerSpell( "Gouge", '8', '9', '0', '-', '=', '', '', "ROGUE" )
+	RegisterKickerSpell( "Garrote", '8', '9', '0', '-', '=', '', '', "ROGUE" )
+	RegisterKickerSpell( "Garrote", '8', '9', '0', '-', '=', '', '', "ROGUE" )
+
+	RegisterKickerSpell( "Counter Shot", '8', '9', '0', '-', '=', '', '', "HUNTER" )
+	RegisterKickerSpell( "Silencing Shot", '8', '9', '0', '-', '=', '', '', "HUNTER" )
+	RegisterKickerSpell( "Intimidation", '8', '9', '0', '-', '=', '', '', "HUNTER" )
+	RegisterKickerSpell( "Wyvern Sting", '8', '9', '0', '-', '=', '', '', "HUNTER" )
+
+	RegisterKickerSpell( "Pummel", '8', '9', '0', '-', '=', '', '', "WARRIOR" )
+	RegisterKickerSpell( "Intimidating Shout", '8', '9', '0', '-', '=', '', '', "WARRIOR" )
+	RegisterKickerSpell( "Shockwave", '8', '9', '0', '-', '=', '', '', "WARRIOR" )
+
+	RegisterKickerSpell( "Howl of Terror", '8', '9', '0', '-', '=', '', '', "WARLOCK" )
+	RegisterKickerSpell( "Shadowfury", '8', '9', '0', '-', '=', '', '', "WARLOCK" )
+	RegisterKickerSpell( "Fear", '8', '9', '0', '-', '=', '', '', "WARLOCK" )
+
+	RegisterKickerSpell( "Spear Hand Strike", '8', '9', '0', '-', '=', '', '', "MONK" )
+
+	RegisterKickerSpell( "Mind Freeze", '8', '9', '0', '-', '=', '', '', "DEATHKNIGHT" )
+	RegisterKickerSpell( "Strangulate", '8', '9', '0', '-', '=', '', '', "DEATHKNIGHT" )
+	RegisterKickerSpell( "Death Grip", '8', '9', '0', '-', '=', '', '', "DEATHKNIGHT" )
+
+	RegisterKickerSpell( "Bash", '8', '9', '0', '-', '=', '', '', "DRUID" )
+	RegisterKickerSpell( "Skull Bash", '8', '9', '0', '-', '=', '', '', "DRUID" )
+	RegisterKickerSpell( "Maim", '8', '9', '0', '-', '=', '', '', "DRUID" )
+	RegisterKickerSpell( "Cyclone", '8', '9', '0', '-', '=', '', '', "DRUID" )
+	RegisterKickerSpell( "Maim", '8', '9', '0', '-', '=', '', '', "DRUID" )
+	RegisterKickerSpell( "Typhoon", '8', '9', '0', '-', '=', '', '', "DRUID" )
+	RegisterKickerSpell( "Solar Beam", '8', '9', '0', '-', '=', '', '', "DRUID" )
+
+	RegisterKickerSpell( "Psychic Scream", '8', '9', '0', '-', '=', '', '', "PRIEST" )
+	RegisterKickerSpell( "Silence", '8', '9', '0', '-', '=', '', '', "PRIEST" )
+	RegisterKickerSpell( "Psychic Horror", '8', '9', '0', '-', '=', '', '', "PRIEST" )
+	RegisterKickerSpell( "Silence", '8', '9', '0', '-', '=', '', '', "PRIEST" )
+	RegisterKickerSpell( "Holy Word: Chastise", '8', '9', '0', '-', '=', '', '', "PRIEST" )
+
+	RegisterKickerSpell( "Arcane Torrent", '0', '', '', '', '', '', '' )
+	RegisterKickerSpell( "War Stomp", '0', '', '', '', '', '', '' )
+	
+	--RegisterKickerSpell( "Fireball", '8', '9', '0', '-', '=', '', '', "MAGE" )	--just debugging
+	InterruptSpellsEndAt = IndexCounter
+end
+LoadDefaultSettings()
+
 --print("Index Counter : "..IndexCounter )
 
 function KickBot_OnLoad(self)
 	KickBotFrame = self
 	KickBotFrame:RegisterForDrag("LeftButton")
 	KickBotFrame:SetScript("OnUpdate",KickBot_onUpdate)
+	KickBotFrame:RegisterEvent("ADDON_LOADED");
 
 	KickBotFrame.texture = KickBotFrame:CreateTexture( nil, "BACKGROUND" )
 	KickBotFrame.texture:SetTexture( 1, 1, 1, 1 )
@@ -132,9 +194,9 @@ local function SignalBestAction( Index, TargetTypeIndex )
 		KickBotFrame.texture:SetVertexColor( 16 / 255.0, 255 / 255.0, 128 / 255.0, 1 ) -- magic number to allow AU3 to find it
 		DebugLastValue = -1
 	elseif( Index < IndexCounter ) then
-		local SpellNameIndex = SpellColorRGB[ Index ] / 255.0
+		local SpellNameIndex = SpellNameTargetTypeKeyBinds[ Index * 100 + 9 ] / 255.0
 		local TargetType = ( TargetTypeIndex + 1 ) * SpellRGBStep / 255.0
-		local KeyBindToPress = SpellNameTargetTypeKeyBinds[ Index + TargetTypeIndex * 100 ] / 255.0
+		local KeyBindToPress = SpellNameTargetTypeKeyBinds[ Index * 100 + TargetTypeIndex ] / 255.0
 		KickBotFrame.texture:SetVertexColor( TargetType, SpellNameIndex, KeyBindToPress, 1 )
 --[[		
 		if( DebugLastValue ~= Index ) then
@@ -246,7 +308,7 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 	if( RemainingSecondsToFinishCast <= SecondsUntilSpellCastEndToInterruptStart and RemainingSecondsToFinishCast >= SecondsUntilSpellCastEndToInterruptEnd ) then
 --			print( InterruptSpellsStartAt.." "..InterruptSpellsEndAt )
 			for N=InterruptSpellsStartAt,InterruptSpellsEndAt,1 do
-				local NextSpellName = SpellNames[ N ];
+				local NextSpellName = SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + N * 100 ];
 --				print( N.." "..NextSpellName )
 				if( NextSpellName ~= nil ) then
 					local usable, nomana = IsUsableSpell( NextSpellName )
@@ -360,4 +422,109 @@ function KickBot_onUpdate( )
 	end
 end
 
+----------------------------------
+-- All the code below is the shit to make the editbox appear and work. Could bt trowh out if you ask me, but you gotto think about the noobs also
+----------------------------------
 
+local function BuildSpellNameKeyBindsFromListToSave()
+	SpellNameKeyBinds = SpellNameTargetTypeKeyBinds
+	SpellNameKeyBinds[999]=1	-- storage system versions
+end
+
+local function BuildSpellNameKeyBindsFromSaveToList()
+	if( SpellNameKeyBinds == nil or SpellNameKeyBinds[999] ~= 1 ) then
+		BuildSpellNameKeyBindsFromListToSave()
+	end
+	SpellNameTargetTypeKeyBinds = SpellNameKeyBinds
+end
+
+local ScriptLoaded = 0
+function KickBot_OnEvent( Obj, event, arg1)
+--	print( "Got event "..tostring(Obj).." "..tostring(event).." "..tostring(arg1) );
+	if event == "ADDON_LOADED" and ScriptLoaded == 0 then
+		ScriptLoaded = 1
+		BuildSpellNameKeyBindsFromSaveToList()
+	end
+end
+
+function KickBot_OnClick( Obj, Button )
+	if( EditBoxFrame:IsShown() ) then
+		EditBoxFrame:Hide()
+	else
+		EditBoxFrame:Show()
+	end
+end
+
+EditBoxFrame = nil
+function EditForm_OnLoad( Obj )
+	
+	EditBoxFrame = Obj
+
+	local ShowHideEditbox = CreateFrame("Button", "TestButton", KickBotFrame, "UIPanelButtonTemplate2")
+	ShowHideEditbox:RegisterForClicks("LeftButtonUp", "RightButtonDown");
+	ShowHideEditbox:SetPoint("CENTER", 0, -KickBotFrame:GetHeight() / 2 )
+	ShowHideEditbox:SetWidth( 20 )
+	ShowHideEditbox:SetHeight( 12 )
+	ShowHideEditbox:HookScript("OnClick", KickBot_OnClick )
+
+	local pc, EnglishClass = UnitClass( "player" )
+--print( "player class is "..pc.." "..EnglishClass )
+	local VisualRow = 0
+	for j = 1, IndexCounter do
+		if( SpellNameTargetTypeKeyBinds[8 + j * 100 ] == nil or SpellNameTargetTypeKeyBinds[8 + j * 100 ] == EnglishClass ) then
+			VisualRow = VisualRow + 1
+			for i = 0, 7 do
+				local TempEditBox = CreateFrame("EditBox", "EditBoxTemplateEdit"..i, EditBoxFrame, "EditBoxTemplateEditB")
+				TempEditBox:SetPoint("TOPLEFT", 20 + ( i * 60 ), -50 - ( ( VisualRow - 1 ) * 30 ) )
+				TempEditBox.Row = j
+				TempEditBox.Col = i
+				if( i == SPELL_NAME_INDEX ) then 
+					TempEditBox:SetWidth( 110 )
+					TempEditBox:SetMaxLetters( 110 )
+				end
+			end
+		end
+	end
+end
+
+function GetEditboxValue( Obj )
+	local Row = Obj.Row
+	local Col = Obj.Col
+--	print( " val "..tostring( SpellNameTargetTypeKeyBinds[ 4 + 6 * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + 6 * 100 ] ) )
+--	print( "cur val "..tostring( Obj ).." "..tostring( Obj.Row ).." "..tostring( Obj.Col ).." "..tostring( Row ).." "..tostring( Col ) )
+--	print( "get ind "..Col.." row "..Row.." val "..tostring( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ 7 + Row * 100 ] ) )
+	if( Col >= 0 and Col <= 6 ) then
+		if( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] == nil ) then
+			Obj:SetText( "" )
+		else
+			Obj:SetText( strchar( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] ) )
+		end
+	elseif( Col == SPELL_NAME_INDEX and SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] ~= nil ) then
+		Obj:SetText( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] )
+	end
+end
+
+function SetEditboxValue( Obj )
+	local Row = Obj.Row
+	local Col = Obj.Col
+	if( Col >= 0 and Col <= 6 ) then
+		SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] = string.byte( Obj:GetText( ) )
+	elseif( Col == SPELL_NAME_INDEX ) then
+		SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] = Obj:GetText( )
+	end
+--	print( " val "..tostring( SpellNameTargetTypeKeyBinds[ 4 + 6 * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + 6 * 100 ] ) )
+--	print( "set ind "..Col.." row "..Row.." val "..tostring( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + Row * 100 ] ) )
+--	print( "cur val "..tostring(  ) )
+--    Obj:GetText( )
+end
+
+function SaveEditBoxData()
+	EditBoxFrame:Hide()
+end
+
+function ResetEditBoxData()
+	EditBoxFrame:Hide()
+--	print( " val "..tostring( SpellNameTargetTypeKeyBinds[ 4 + 6 * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + 6 * 100 ] ) )
+	LoadDefaultSettings()
+--	print( " val "..tostring( SpellNameTargetTypeKeyBinds[ 4 + 6 * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + 6 * 100 ] ) )
+end
