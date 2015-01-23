@@ -178,7 +178,7 @@ function KickBot_OnLoad(self)
 	KickBotFrame.text:SetAlpha( 1 );
 	KickBotFrame.text:SetAllPoints();
 	
-    print("KickBot loaded.Don't forget to start AU3 script. To stop AU3 press '['. To pause AU3 press '\\'.");
+    print("KickBot loaded.Don't forget to start AU3 script. To stop AU3 press '['. To pause AU3 press '\\'. For advanced settings edit KickBot.lua");
 end
 
 local function SendToAU3KeyPress( AsciiChar )

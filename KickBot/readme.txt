@@ -10,11 +10,12 @@ Install :
 Setup :
 - log ingame
 - position the small greenish box ( that is in the middle of the screen ) somewhere where it does not bother you. It's not covered by other window. You will not later move this window
+- the lower part of the box is a button. Click on it and adjust the keys that should be automatically pressed to cast a spell
 - Optional, if "SendBackKeys.au3" can not automatically find the greenish box correctly :
 	- start "MouseInfo.au3" and get the location( aprox middle ) of the grey box
 	- edit SendBackKeys.au3. Set proper $LuaFramePosX and $LuaFramePosY
 - Optional : 
-	- edit RegisterKickerSpell lines so the script will send proper keypress to the client. By default "Rebuke" is on key "8"....
+	- edit KickBot.lua for advanced setup regarding latency compensation + burst only interrupts + spell blacklists + spell whitelists....
 
 How to check if it is working :
 - The greenish box should change it's color when the AU3 file should do something

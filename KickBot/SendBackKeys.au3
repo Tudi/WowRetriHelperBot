@@ -115,16 +115,15 @@ while( $ScriptIsRunning == 1 )
 wend
 
 func EventImageFound( $SpellNameIndex, $TargetIndex, $SendKeyFromLUA )
-;	MsgBox( $MB_SYSTEMMODAL, "", "found img " & $SendKeyForMainTarget[ $SpellNameIndex ] & " at index " & $SpellNameIndex )
+	local $SendKey = ""
+;	Send( "{ENTER}" & "1 target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKeyFromLUA & " key " & chr( $SendKeyFromLUA ) & " {ENTER}" )	
 	if( $ScriptIsPaused <> 0 ) then
 		return
 	endif
 	
-	if( $TargetIndex > 6 or $SpellNameIndex < 0 or $SpellNameIndex >= 20 ) then
+	if( $SendKeyFromLUA <=0 and( $TargetIndex > 6 or $SpellNameIndex < 0 or $SpellNameIndex >= 20 ) ) then
 		return
 	endif
-	
-	local $SendKey = ""
 
 	if( $SendKeyFromLUA <> 0 ) then
 		$SendKey = chr( $SendKeyFromLUA )
@@ -134,7 +133,7 @@ func EventImageFound( $SpellNameIndex, $TargetIndex, $SendKeyFromLUA )
 	
 	if( $SendKey <> "" ) then
 		Send( $SendKey )
-;		Send( "{ENTER}" & "2 2) target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKey & " {ENTER}" )	
+;		Send( "{ENTER}" & "2 target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKey & " {ENTER}" )	
 	endif
 endfunc
 
