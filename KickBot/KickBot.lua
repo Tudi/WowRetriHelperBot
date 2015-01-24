@@ -460,7 +460,7 @@ function EditForm_OnLoad( Obj )
 	
 	EditBoxFrame = Obj
 
-	local ShowHideEditbox = CreateFrame("Button", "TestButton", KickBotFrame, "UIPanelButtonTemplate2")
+	local ShowHideEditbox = CreateFrame("Button", "TestButton", KickBotFrame, "UIPanelButtonTemplate")
 	ShowHideEditbox:RegisterForClicks("LeftButtonUp", "RightButtonDown");
 	ShowHideEditbox:SetPoint("CENTER", 0, -KickBotFrame:GetHeight() / 2 )
 	ShowHideEditbox:SetWidth( 20 )
