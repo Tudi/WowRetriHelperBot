@@ -556,7 +556,7 @@ function SetEditboxValue( Obj )
 		if( SecondsUntilSpellCastEndToInterruptEnd < 0.05 ) then
 			SecondsUntilSpellCastEndToInterruptEnd = 0.05
 		end
-print(SecondsUntilSpellCastEndToInterruptEnd)		
+--print(SecondsUntilSpellCastEndToInterruptEnd)		
 	end
 --	print( " val "..tostring( SpellNameTargetTypeKeyBinds[ 4 + 6 * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + 6 * 100 ] ) )
 --	print( "set ind "..Col.." row "..Row.." val "..tostring( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + Row * 100 ] ) )
