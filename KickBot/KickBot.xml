@@ -94,7 +94,7 @@
   <Frame name="EditBoxForm" hidden="true" >
     <!--<FrameSkin skinid="8309da78-006d-4401-9d4f-cbc448d08261" frameid="047a5294-fa59-460b-83cb-0c19711baeb7" />-->
     <Size>
-      <AbsDimension x="566" y="400" />
+      <AbsDimension x="600" y="500" />
     </Size>
     <Anchors>
       <Anchor point="CENTER" relativeTo="UIParent">
@@ -360,7 +360,7 @@
         <Anchors>
           <Anchor point="TOPLEFT">
             <Offset>
-              <AbsDimension x="100" y="-350" />
+              <AbsDimension x="100" y="-450" />
             </Offset>
           </Anchor>
         </Anchors>
@@ -398,7 +398,7 @@
         <Anchors>
           <Anchor point="TOPLEFT">
             <Offset>
-              <AbsDimension x="300" y="-350" />
+              <AbsDimension x="300" y="-450" />
             </Offset>
           </Anchor>
         </Anchors>

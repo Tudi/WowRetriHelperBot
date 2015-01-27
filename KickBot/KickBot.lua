@@ -61,8 +61,8 @@ NumberOfCounterAuras = NumberOfCounterAuras + 1
 --NumberOfCounterAuras = NumberOfCounterAuras + 1
 -- Only interrupt spells if target also has one of these buffs, You can separate buff names by , if you want to check one of more than 1 buffs
 -- bad ex : only interrupt Exorcism if target has Holy Avenger ( this doubles the damage of Exorcism )
-local ConditionalInterrupts = {}
---ConditionalInterrupts["Fireball"] = "Arcane Brilliance,Arcane Missiles!" -- i'm debugging the script, chill
+local ConditionalInterruptsList = {}
+--ConditionalInterruptsList["Fireball"] = "Arcane Brilliance,Arcane Missiles!" -- i'm debugging the script, chill
 
 ---------------------------------------------------------------
 -- End of config section
@@ -103,6 +103,10 @@ local function RegisterKickerSpell( SpellName, MainTargetKeyBind, FocusTargetKey
 end
 
 local SecondsUntilSpellCastEndToInterruptStartBackup = SecondsUntilSpellCastEndToInterruptStart
+local SpellNamesCanInterruptOnPlayersBackup = SpellNamesCanInterruptOnPlayers
+local SpellNamesCanNotInterruptBackup = SpellNamesCanNotInterrupt
+local OnlyInterruptOnBurstBackup = OnlyInterruptOnBurst
+
 local function LoadDefaultSettings()
 	IndexCounter = 0
 	
@@ -176,6 +180,16 @@ local function LoadDefaultSettings()
 	
 	SpellNameTargetTypeKeyBinds[ 20 ] = SecondsUntilSpellCastEndToInterruptStartBackup
 	SecondsUntilSpellCastEndToInterruptStart = SecondsUntilSpellCastEndToInterruptStartBackup
+
+	SpellNameTargetTypeKeyBinds[ 21 ] = SpellNamesCanInterruptOnPlayersBackup
+	SpellNamesCanInterruptOnPlayers = SpellNamesCanInterruptOnPlayersBackup
+
+	SpellNameTargetTypeKeyBinds[ 22 ] = SpellNamesCanNotInterruptBackup
+	SpellNamesCanNotInterrupt = SpellNamesCanNotInterruptBackup
+	
+	SpellNameTargetTypeKeyBinds[ 23 ] = OnlyInterruptOnBurstBackup
+	OnlyInterruptOnBurst = OnlyInterruptOnBurstBackup
+	
 end
 LoadDefaultSettings()
 
@@ -337,10 +351,10 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 					-- to avoid fake casts, you might want to check if target is casting a spell that he is specced in
 					if( AllInterruptConditionsAreMet == 1 and ConditionalInterruptChecked == 0 ) then
 						ConditionalInterruptChecked = 1
-						if( ConditionalInterrupts[ SpellName ] ~= nil ) then
---							print( " target needs to have one of these buffs : "..ConditionalInterrupts[ SpellName ].." to interrupt spell '"..SpellName.."'" );
+						if( ConditionalInterruptsList[ SpellName ] ~= nil ) then
+--							print( " target needs to have one of these buffs : "..ConditionalInterruptsList[ SpellName ].." to interrupt spell '"..SpellName.."'" );
 							local FoundAnyBuff = 0
-							local RequiredBuffsList = { strsplit( ",", ConditionalInterrupts[ SpellName ] ) }
+							local RequiredBuffsList = { strsplit( ",", ConditionalInterruptsList[ SpellName ] ) }
 							for i, RequiredBuff in ipairs( RequiredBuffsList ) do
 --								print( "Checking buff "..RequiredBuff.." on target " )
 								local name, rank, icon, count, debuffType, auraduration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId = UnitAura( unit, RequiredBuff )
@@ -441,18 +455,18 @@ end
 
 local function BuildSpellNameKeyBindsFromListToSave()
 	SpellNameKeyBinds = SpellNameTargetTypeKeyBinds
-	SpellNameKeyBinds[999] = 1	-- storage system versions
+	SpellNameKeyBinds[999] = 3	-- storage system versions
 end
 
 local function BuildSpellNameKeyBindsFromSaveToList()
-	if( SpellNameKeyBinds == nil or SpellNameKeyBinds[999] ~= 1 ) then
+	if( SpellNameKeyBinds == nil or SpellNameKeyBinds[999] ~= 3 or SpellNameKeyBinds[23] == nil ) then
 		BuildSpellNameKeyBindsFromListToSave()
 	end
 	
-	-- because this feature was added after frist version of save system
-	if( SpellNameKeyBinds[20] == nil ) then 
-		SpellNameKeyBinds[20] = SecondsUntilSpellCastEndToInterruptStartBackup
-	end
+	SpellNameTargetTypeKeyBinds[ 20 ] = SecondsUntilSpellCastEndToInterruptStart
+	SpellNameTargetTypeKeyBinds[ 21 ] = SpellNamesCanInterruptOnPlayers
+	SpellNameTargetTypeKeyBinds[ 22 ] = SpellNamesCanNotInterrupt
+	SpellNameTargetTypeKeyBinds[ 23 ] = OnlyInterruptOnBurst
 	
 	SpellNameTargetTypeKeyBinds = SpellNameKeyBinds
 end
@@ -512,12 +526,64 @@ function EditForm_OnLoad( Obj )
 	TempLabel:SetWidth( 50 * 6 )
 	TempLabel.text = TempLabel:CreateFontString( nil, "ARTWORK", "GameFontNormal" )
 	TempLabel.text:SetText( "Cast bar remaining seconds to start interrupt" )
+    TempLabel.text:SetJustifyH("LEFT")
 	TempLabel.text:SetAllPoints();
 	local TempEditBox = CreateFrame("EditBox", "EditBoxTemplateEdit", EditBoxFrame, "EditBoxTemplateEditB")
-	TempEditBox:SetPoint("TOPLEFT", 350, -50 - ( ( VisualRow - 1 ) * 30 ) )
+	TempEditBox:SetPoint("TOPLEFT", 300, -50 - ( ( VisualRow - 1 ) * 30 ) )
 	TempEditBox.Col = 20
 	TempEditBox:SetWidth( 6 * 12 )
 	TempEditBox:SetMaxLetters( 6 )
+
+	VisualRow = VisualRow + 1
+	local TempLabel = CreateFrame( "frame", "LabelTemplateWhiteList", EditBoxFrame, "LabelTemplate" )
+	TempLabel:SetPoint("TOPLEFT", 20, -50 - ( ( VisualRow - 1 ) * 30 ) )
+	TempLabel:SetWidth( 50 * 6 )
+	TempLabel.text = TempLabel:CreateFontString( nil, "ARTWORK", "GameFontNormal" )
+	TempLabel.text:SetText( "Only interrupt these spell names" )
+    TempLabel.text:SetJustifyH("LEFT")
+	TempLabel.text:SetAllPoints();
+	local TempEditBox = CreateFrame("EditBox", "EditBoxTemplateEdita", EditBoxFrame, "EditBoxTemplateEditB")
+	TempEditBox:SetPoint("TOPLEFT", 300, -50 - ( ( VisualRow - 1 ) * 30 ) )
+	TempEditBox.Col = 21
+	TempEditBox:SetWidth( 250 )
+	TempEditBox:SetMaxLetters( 1500 )
+
+	VisualRow = VisualRow + 1
+	local TempLabel = CreateFrame( "frame", "LabelTemplateBlackList", EditBoxFrame, "LabelTemplate" )
+	TempLabel:SetPoint("TOPLEFT", 20, -50 - ( ( VisualRow - 1 ) * 30 ) )
+	TempLabel:SetWidth( 50 * 6 )
+	TempLabel.text = TempLabel:CreateFontString( nil, "ARTWORK", "GameFontNormal" )
+	TempLabel.text:SetText( "Do NOT interrupt these spell names" )
+    TempLabel.text:SetJustifyH("LEFT")
+	TempLabel.text:SetAllPoints();
+	local TempEditBox = CreateFrame("EditBox", "EditBoxTemplateEditb", EditBoxFrame, "EditBoxTemplateEditB")
+	TempEditBox:SetPoint("TOPLEFT", 300, -50 - ( ( VisualRow - 1 ) * 30 ) )
+	TempEditBox.Col = 22
+	TempEditBox:SetWidth( 250 )
+	TempEditBox:SetMaxLetters( 1500 )
+
+	VisualRow = VisualRow + 1
+	local TempLabel = CreateFrame( "frame", "LabelTemplateBurst", EditBoxFrame, "LabelTemplate" )
+	TempLabel:SetPoint("TOPLEFT", 20, -50 - ( ( VisualRow - 1 ) * 30 ) )
+	TempLabel:SetWidth( 80 * 6 )
+	TempLabel.text = TempLabel:CreateFontString( nil, "ARTWORK", "GameFontNormal" )
+	TempLabel.text:SetText( "Only interrupt on burst(edit 'BurstAuraList' in kickbot.lua)" )
+    TempLabel.text:SetJustifyH("LEFT")
+	TempLabel.text:SetAllPoints();
+	local TempEditBox = CreateFrame("EditBox", "EditBoxTemplateEditc", EditBoxFrame, "EditBoxTemplateEditB")
+	TempEditBox:SetPoint("TOPLEFT", 400, -50 - ( ( VisualRow - 1 ) * 30 ) )
+	TempEditBox.Col = 23
+	TempEditBox:SetWidth( 20 )
+	TempEditBox:SetMaxLetters( 1 )
+
+	VisualRow = VisualRow + 1
+	local TempLabel = CreateFrame( "frame", "LabelTemplateBurstSpecific", EditBoxFrame, "LabelTemplate" )
+	TempLabel:SetPoint("TOPLEFT", 20, -50 - ( ( VisualRow - 1 ) * 30 ) )
+	TempLabel:SetWidth( 100 * 6 )
+	TempLabel.text = TempLabel:CreateFontString( nil, "ARTWORK", "GameFontNormal" )
+	TempLabel.text:SetText( "Only interrupt if casted spell is buffed(edit 'ConditionalInterrupts' in kickbot.lua)" )
+    TempLabel.text:SetJustifyH("LEFT")
+	TempLabel.text:SetAllPoints();
 end
 
 function GetEditboxValue( Obj )
@@ -534,8 +600,8 @@ function GetEditboxValue( Obj )
 		end
 	elseif( Col == SPELL_NAME_INDEX and SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] ~= nil ) then
 		Obj:SetText( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] )
-	elseif( Col == 20 ) then
-		Obj:SetText( SpellNameTargetTypeKeyBinds[ 20 ] )
+	elseif( Col >= 20 and Col <= 23 ) then
+		Obj:SetText( SpellNameTargetTypeKeyBinds[ Col ] )
 	end
 end
 
@@ -557,6 +623,21 @@ function SetEditboxValue( Obj )
 			SecondsUntilSpellCastEndToInterruptEnd = 0.05
 		end
 --print(SecondsUntilSpellCastEndToInterruptEnd)		
+	elseif( Col == 21 ) then
+		SpellNamesCanInterruptOnPlayers = Obj:GetText( )
+		SpellNameTargetTypeKeyBinds[ 21 ] = SpellNamesCanInterruptOnPlayers
+		if( #SpellNamesCanInterruptOnPlayers > 0 ) then
+			AllowAnyPlayerSpellInterrupt = 0
+		else
+			AllowAnyPlayerSpellInterrupt = 1
+		end
+--print( AllowAnyPlayerSpellInterrupt )
+	elseif( Col == 22 ) then
+		SpellNamesCanNotInterrupt = Obj:GetText( )
+		SpellNameTargetTypeKeyBinds[ 22 ] = SpellNamesCanNotInterrupt
+	elseif( Col == 23 ) then
+		OnlyInterruptOnBurst = tonumber( Obj:GetText( ) )
+		SpellNameTargetTypeKeyBinds[ 23 ] = OnlyInterruptOnBurst
 	end
 --	print( " val "..tostring( SpellNameTargetTypeKeyBinds[ 4 + 6 * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + 6 * 100 ] ) )
 --	print( "set ind "..Col.." row "..Row.." val "..tostring( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + Row * 100 ] ) )
