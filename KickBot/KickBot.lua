@@ -108,6 +108,14 @@ local SpellNamesCanNotInterruptBackup = SpellNamesCanNotInterrupt
 local OnlyInterruptOnBurstBackup = OnlyInterruptOnBurst
 
 local function LoadDefaultSettings()
+
+	for i in pairs( SpellNameTargetTypeKeyBinds ) do
+--print( "reseting "..i.." with val "..SpellNameTargetTypeKeyBinds[i] )
+		SpellNameTargetTypeKeyBinds[i] = nil
+		table.remove( SpellNameTargetTypeKeyBinds, i )
+	end
+	SpellNameTargetTypeKeyBinds = {}
+	
 	IndexCounter = 0
 	
 	-- when we do nothing we will show this
@@ -118,64 +126,63 @@ local function LoadDefaultSettings()
 
 	-- add spells that LUA should try to use to interrupt enemy spell cast. Also add the keybind LUA should use for that specific target type to cast the spell. 
 	-- the order of the spells will say what the LUA should try to cast first. You might want to cast Rebuke more than Hammer of Justice...
-	RegisterKickerSpell( "Rebuke", '8', '-', '=', '', '', '', '', "PALADIN" )
+	RegisterKickerSpell( "Rebuke", '8', '', '', '', '', '', '', "PALADIN" )
 	RegisterKickerSpell( "Fist of Justice", '9', '', '', '', '', '', '', "PALADIN" )
 	RegisterKickerSpell( "Hammer of Justice", '9', '', '', '', '', '', '', "PALADIN" )
-	RegisterKickerSpell( "Repentance", '8', '-', '=', '', '', '', '', "PALADIN" )
-	RegisterKickerSpell( "Avenger's Shield", '8', '-', '=', '', '', '', '', "PALADIN" )
+	RegisterKickerSpell( "Repentance", '8', '', '', '', '', '', '', "PALADIN" )
+	RegisterKickerSpell( "Avenger's Shield", '8', '', '', '', '', '', '', "PALADIN" )
 
-	RegisterKickerSpell( "Counterspell", '8', '9', '0', '', '', '', '', "MAGE" )
-	RegisterKickerSpell( "Deep Freeze", '8', '', '', '', '', '', '', "MAGE" )
-	RegisterKickerSpell( "Dragon's Breath", '8', '', '', '', '', '', '', "MAGE" )
+	RegisterKickerSpell( "Counterspell", '8', '', '', '', '', '', '', "MAGE" )
+	RegisterKickerSpell( "Deep Freeze", '9', '', '', '', '', '', '', "MAGE" )
+	RegisterKickerSpell( "Dragon's Breath", '0', '', '', '', '', '', '', "MAGE" )
 
 	RegisterKickerSpell( "Wind Shear", '8', '', '', '', '', '', '', "SHAMAN" )
-	RegisterKickerSpell( "Thunderstorm", '8', '', '', '', '', '', '', "SHAMAN" )
+	RegisterKickerSpell( "Thunderstorm", '9', '', '', '', '', '', '', "SHAMAN" )
 
-	RegisterKickerSpell( "Kick", '8', '9', '0', '-', '=', '', '', "ROGUE" )
-	RegisterKickerSpell( "Blind", '8', '9', '0', '-', '=', '', '', "ROGUE" )
-	RegisterKickerSpell( "Kidney Shot", '8', '9', '0', '-', '=', '', '', "ROGUE" )
-	RegisterKickerSpell( "Cheap Shot", '8', '9', '0', '-', '=', '', '', "ROGUE" )
-	RegisterKickerSpell( "Gouge", '8', '9', '0', '-', '=', '', '', "ROGUE" )
-	RegisterKickerSpell( "Garrote", '8', '9', '0', '-', '=', '', '', "ROGUE" )
-	RegisterKickerSpell( "Garrote", '8', '9', '0', '-', '=', '', '', "ROGUE" )
+	RegisterKickerSpell( "Kick", '8', '', '', '', '', '', '', "ROGUE" )
+	RegisterKickerSpell( "Blind", '9', '', '', '', '', '', '', "ROGUE" )
+	RegisterKickerSpell( "Kidney Shot", '0', '', '', '', '', '', '', "ROGUE" )
+	RegisterKickerSpell( "Cheap Shot", '-', '', '', '', '', '', '', "ROGUE" )
+	RegisterKickerSpell( "Gouge", '=', '', '', '', '', '', '', "ROGUE" )
+	RegisterKickerSpell( "Garrote", '7', '', '', '', '', '', '', "ROGUE" )
 
-	RegisterKickerSpell( "Counter Shot", '8', '9', '0', '-', '=', '', '', "HUNTER" )
-	RegisterKickerSpell( "Silencing Shot", '8', '9', '0', '-', '=', '', '', "HUNTER" )
-	RegisterKickerSpell( "Intimidation", '8', '9', '0', '-', '=', '', '', "HUNTER" )
-	RegisterKickerSpell( "Wyvern Sting", '8', '9', '0', '-', '=', '', '', "HUNTER" )
+	RegisterKickerSpell( "Counter Shot", '8', '', '', '', '', '', '', "HUNTER" )
+	RegisterKickerSpell( "Silencing Shot", '9', '', '', '', '', '', '', "HUNTER" )
+	RegisterKickerSpell( "Intimidation", '0', '', '', '', '', '', '', "HUNTER" )
+	RegisterKickerSpell( "Wyvern Sting", '-', '', '', '', '', '', '', "HUNTER" )
 
-	RegisterKickerSpell( "Pummel", '8', '9', '0', '-', '=', '', '', "WARRIOR" )
-	RegisterKickerSpell( "Intimidating Shout", '8', '9', '0', '-', '=', '', '', "WARRIOR" )
-	RegisterKickerSpell( "Shockwave", '8', '9', '0', '-', '=', '', '', "WARRIOR" )
+	RegisterKickerSpell( "Pummel", '8', '', '', '', '', '', '', "WARRIOR" )
+	RegisterKickerSpell( "Intimidating Shout", '9', '', '', '', '', '', '', "WARRIOR" )
+	RegisterKickerSpell( "Shockwave", '0', '', '', '', '', '', '', "WARRIOR" )
 
-	RegisterKickerSpell( "Howl of Terror", '8', '9', '0', '-', '=', '', '', "WARLOCK" )
-	RegisterKickerSpell( "Shadowfury", '8', '9', '0', '-', '=', '', '', "WARLOCK" )
-	RegisterKickerSpell( "Fear", '8', '9', '0', '-', '=', '', '', "WARLOCK" )
+	RegisterKickerSpell( "Howl of Terror", '8', '','','','', '', '', "WARLOCK" )
+	RegisterKickerSpell( "Shadowfury", '9', '','','','', '', '', "WARLOCK" )
+	RegisterKickerSpell( "Fear", '0', '','','','', '', '', "WARLOCK" )
 
-	RegisterKickerSpell( "Spear Hand Strike", '8', '9', '0', '-', '=', '', '', "MONK" )
+	RegisterKickerSpell( "Spear Hand Strike", '8', '','','','', '', '', "MONK" )
 
-	RegisterKickerSpell( "Mind Freeze", '8', '9', '0', '-', '=', '', '', "DEATHKNIGHT" )
-	RegisterKickerSpell( "Strangulate", '8', '9', '0', '-', '=', '', '', "DEATHKNIGHT" )
-	RegisterKickerSpell( "Death Grip", '8', '9', '0', '-', '=', '', '', "DEATHKNIGHT" )
+	RegisterKickerSpell( "Mind Freeze", '8', '','','','', '', '', "DEATHKNIGHT" )
+	RegisterKickerSpell( "Strangulate", '9', '','','','', '', '', "DEATHKNIGHT" )
+	RegisterKickerSpell( "Death Grip", '0', '','','','', '', '', "DEATHKNIGHT" )
 
-	RegisterKickerSpell( "Bash", '8', '9', '0', '-', '=', '', '', "DRUID" )
-	RegisterKickerSpell( "Skull Bash", '8', '9', '0', '-', '=', '', '', "DRUID" )
-	RegisterKickerSpell( "Maim", '8', '9', '0', '-', '=', '', '', "DRUID" )
-	RegisterKickerSpell( "Cyclone", '8', '9', '0', '-', '=', '', '', "DRUID" )
-	RegisterKickerSpell( "Maim", '8', '9', '0', '-', '=', '', '', "DRUID" )
-	RegisterKickerSpell( "Typhoon", '8', '9', '0', '-', '=', '', '', "DRUID" )
-	RegisterKickerSpell( "Solar Beam", '8', '9', '0', '-', '=', '', '', "DRUID" )
+	RegisterKickerSpell( "Bash", '8', '','','','', '', '', "DRUID" )
+	RegisterKickerSpell( "Skull Bash", '9', '','','','', '', '', "DRUID" )
+	RegisterKickerSpell( "Maim", '0', '','','','', '', '', "DRUID" )
+	RegisterKickerSpell( "Cyclone", '-', '','','','', '', '', "DRUID" )
+	RegisterKickerSpell( "Maim", '=', '','','','', '', '', "DRUID" )
+	RegisterKickerSpell( "Typhoon", '7', '','','','', '', '', "DRUID" )
+	RegisterKickerSpell( "Solar Beam", '6', '','','','', '', '', "DRUID" )
 
-	RegisterKickerSpell( "Psychic Scream", '8', '9', '0', '-', '=', '', '', "PRIEST" )
-	RegisterKickerSpell( "Silence", '8', '9', '0', '-', '=', '', '', "PRIEST" )
-	RegisterKickerSpell( "Psychic Horror", '8', '9', '0', '-', '=', '', '', "PRIEST" )
-	RegisterKickerSpell( "Silence", '8', '9', '0', '-', '=', '', '', "PRIEST" )
-	RegisterKickerSpell( "Holy Word: Chastise", '8', '9', '0', '-', '=', '', '', "PRIEST" )
+	RegisterKickerSpell( "Psychic Scream", '8', '','','','', '', '', "PRIEST" )
+	RegisterKickerSpell( "Silence", '9', '','','','', '', '', "PRIEST" )
+	RegisterKickerSpell( "Psychic Horror", '0', '','','','', '', '', "PRIEST" )
+	RegisterKickerSpell( "Silence", '-', '','','','', '', '', "PRIEST" )
+	RegisterKickerSpell( "Holy Word: Chastise", '=', '','','','', '', '', "PRIEST" )
 
 	RegisterKickerSpell( "Arcane Torrent", '0', '', '', '', '', '', '' )
 	RegisterKickerSpell( "War Stomp", '0', '', '', '', '', '', '' )
 	
-	--RegisterKickerSpell( "Fireball", '8', '9', '0', '-', '=', '', '', "MAGE" )	--just debugging
+	--RegisterKickerSpell( "Fireball", '8', '','','','', '', '', "MAGE" )	--just debugging
 	InterruptSpellsEndAt = IndexCounter
 	
 	SpellNameTargetTypeKeyBinds[ 20 ] = SecondsUntilSpellCastEndToInterruptStartBackup
@@ -504,7 +511,7 @@ function EditForm_OnLoad( Obj )
 --print( "player class is "..pc.." "..EnglishClass )
 	local VisualRow = 0
 	for j = 1, IndexCounter do
-		if( SpellNameTargetTypeKeyBinds[8 + j * 100 ] == nil or SpellNameTargetTypeKeyBinds[8 + j * 100 ] == EnglishClass ) then
+		if( ( SpellNameTargetTypeKeyBinds[8 + j * 100 ] == nil or SpellNameTargetTypeKeyBinds[8 + j * 100 ] == EnglishClass ) and SpellNameTargetTypeKeyBinds[SPELL_NAME_INDEX + j * 100 ] ~= nil ) then
 			VisualRow = VisualRow + 1
 			for i = 0, 7 do
 				local TempEditBox = CreateFrame("EditBox", "EditBoxTemplateEdit"..i, EditBoxFrame, "EditBoxTemplateEditB")
@@ -512,7 +519,7 @@ function EditForm_OnLoad( Obj )
 				TempEditBox.Row = j
 				TempEditBox.Col = i
 				if( i == SPELL_NAME_INDEX ) then 
-					TempEditBox:SetWidth( 110 )
+					TempEditBox:SetWidth( 130 )
 					TempEditBox:SetMaxLetters( 110 )
 				end
 			end
