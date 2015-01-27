@@ -1,14 +1,26 @@
-﻿-- Able to cast spells that have lower than this as cooldown. Spell Queue system to maximize interrupt precision. My avg latency is 0.35. You can experiment what is best for you
-local SpellCastAllowLatency = 0.01
--- Seconds before a spell cast would end to interrupt the cast. SecondsUntilSpellCastEndToInterruptStart - SecondsUntilSpellCastEndToInterruptEnd = the timeframe until the addon can interrupt a spell. Make it large enough to work for you
+﻿-- Short explanation : Put this value as small as possible to interrupt spells at the end of the castbar. The smaller the value the chance that you will fail to interrupt also increases
+-- Long explanation : If target has a 2 second cast bar and you have this value at 0.5 second, it means that kickbot addon will try to interrupt the spell when the target cast bar is at 1.5 seconds ( 2 - 0.5 ). If you put this value too small than there is a chance that some cooldown will block the casting of the interrupt spell. Due to latency spikes you might also fail to properly cast the interrupt spell
+-- if you have low ingame latency, you can try to put this number as low as 0.5 seconds. That means that the enemy cast bar will be almost full when kickbot will try to interrupt it.
+-- You can edit this value in GUI. Saved values will override this setting
 local SecondsUntilSpellCastEndToInterruptStart = 1.5	-- put as small as possible to catch all interruptable spells. Needs to be larger than SecondsUntilSpellCastEndToInterruptEnd
+-- Short explanation : put this value larger than your ingame latency spikes
+-- Long explanation : If target is casting a 1 second cast bar spell. You have 0.75 second lag. You will notice him casting, but there is no point for you to try to interrupt it as your cast will arrive to late to the server. Your target already casted the spell
+-- If you put this value too small you might see kickbock try to interrupt a spell that was already casted by the target
 local SecondsUntilSpellCastEndToInterruptEnd = 0.5	-- due to global cooldown + addon latency + game latency if you put this to a too small value the interrupt might fail and you wasted interrupt spell
+-- This might be valid only for warlords of draenor(WOD) retail servers. Even instant casts spells have a 1 second cast time. You can interrupt instant cast spells
+-- For older private server you can try to put this number to 0
 local DoNotInterruptPVPSpellWithCastTimeLessThan = 1002	-- i managed to interrupt 3 instant cast spells in a row. That is definetely getting reported as cheater
+-- Able to cast spells that have lower than this as cooldown. Spell Queue system to maximize interrupt precision. My avg latency is 0.35. You can experiment what is best for you
+-- This value is only worth adjusting when you are using the kickbot addon as a DPS rotation bot
+local SpellCastAllowLatency = 0.01
 -- set this to 0 to disable NPC spell interrupts
+-- if you set this to 1 all NPC spells will be included in whitelist
 local AllowAnyNPCSpellInterrupt = 1
 -- set this to 0 if you want to specify a list of spells to interrupt for players
+-- if you set this to 1 than all spells are considered to be in whitelist
 local AllowAnyPlayerSpellInterrupt = 1
 -- white list of spell names. The ones that LUA is allowed to automatically interrupt. This list is only used if you set AllowAnyPlayerSpellInterrupt=0
+-- White list means that kickbot will only try to interrupt spells that are listed here. Anything else will be skipped
 local SpellNamesCanInterruptOnPlayers = ""	-- local SpellNamesCanInterruptOnPlayers = "Fireball|Frostbolt"
 -- black list of spells names. The ones that LUA is NOT allowed to automatically interrupt. This list is always used
 local SpellNamesCanNotInterrupt = ""
@@ -48,8 +60,15 @@ NumberOfCounterAuras = NumberOfCounterAuras + 1
 --CounterAuraList[NumberOfCounterAuras] = "Arcane Brilliance" -- i'm debugging the script, chill
 --NumberOfCounterAuras = NumberOfCounterAuras + 1
 -- Only interrupt spells if target also has one of these buffs, You can separate buff names by , if you want to check one of more than 1 buffs
+-- bad ex : only interrupt Exorcism if target has Holy Avenger ( this doubles the damage of Exorcism )
 local ConditionalInterrupts = {}
 --ConditionalInterrupts["Fireball"] = "Arcane Brilliance,Arcane Missiles!" -- i'm debugging the script, chill
+
+---------------------------------------------------------------
+-- End of config section
+---------------------------------------------------------------
+-- You can edit function "AdviseNextBestActionPQR" if you want to update this addon to a DPS rotation addon while keeping the interrupt feature
+---------------------------------------------------------------
 
 -- listing possible texts here so we can take screenshots of them using autoit
 local TargetTypes = {}
@@ -60,10 +79,7 @@ TargetTypes[3] = "arena2"
 TargetTypes[4] = "arena3"
 TargetTypes[5] = "arena4"
 TargetTypes[6] = "arena5"
---local SpellNames = {}
 local SpellNameTargetTypeKeyBinds = {}
---local SpellPlayerClass = {}
---local SpellColorRGB = {}
 local SpellRGBStep = 4		
 local IndexCounter = 0
 
@@ -86,6 +102,7 @@ local function RegisterKickerSpell( SpellName, MainTargetKeyBind, FocusTargetKey
 	IndexCounter = IndexCounter + 1
 end
 
+local SecondsUntilSpellCastEndToInterruptStartBackup = SecondsUntilSpellCastEndToInterruptStart
 local function LoadDefaultSettings()
 	IndexCounter = 0
 	
@@ -156,6 +173,9 @@ local function LoadDefaultSettings()
 	
 	--RegisterKickerSpell( "Fireball", '8', '9', '0', '-', '=', '', '', "MAGE" )	--just debugging
 	InterruptSpellsEndAt = IndexCounter
+	
+	SpellNameTargetTypeKeyBinds[ 20 ] = SecondsUntilSpellCastEndToInterruptStartBackup
+	SecondsUntilSpellCastEndToInterruptStart = SecondsUntilSpellCastEndToInterruptStartBackup
 end
 LoadDefaultSettings()
 
@@ -171,13 +191,6 @@ function KickBot_OnLoad(self)
 	KickBotFrame.texture:SetTexture( 1, 1, 1, 1 )
 	KickBotFrame.texture:SetAllPoints()
 
-	KickBotFrame.text = KickBotFrame:CreateFontString( nil, "ARTWORK", "GameFontNormal" )
-	KickBotFrame.text:SetFont( "Fonts\\Arialn.TTF", 18, "BOLD")
-	KickBotFrame.text:SetJustifyH("LEFT")
-	KickBotFrame.text:SetShadowColor( 0, 0, 0, 0 )
-	KickBotFrame.text:SetAlpha( 1 );
-	KickBotFrame.text:SetAllPoints();
-	
     print("KickBot loaded.Don't forget to start AU3 script. To stop AU3 press '['. To pause AU3 press '\\'. For advanced settings edit KickBot.lua");
 end
 
@@ -428,13 +441,19 @@ end
 
 local function BuildSpellNameKeyBindsFromListToSave()
 	SpellNameKeyBinds = SpellNameTargetTypeKeyBinds
-	SpellNameKeyBinds[999]=1	-- storage system versions
+	SpellNameKeyBinds[999] = 1	-- storage system versions
 end
 
 local function BuildSpellNameKeyBindsFromSaveToList()
 	if( SpellNameKeyBinds == nil or SpellNameKeyBinds[999] ~= 1 ) then
 		BuildSpellNameKeyBindsFromListToSave()
 	end
+	
+	-- because this feature was added after frist version of save system
+	if( SpellNameKeyBinds[20] == nil ) then 
+		SpellNameKeyBinds[20] = SecondsUntilSpellCastEndToInterruptStartBackup
+	end
+	
 	SpellNameTargetTypeKeyBinds = SpellNameKeyBinds
 end
 
@@ -485,6 +504,20 @@ function EditForm_OnLoad( Obj )
 			end
 		end
 	end
+
+	-- edit kickbot precision
+	VisualRow = VisualRow + 1
+	local TempLabel = CreateFrame( "frame", "LabelTemplateCastbar", EditBoxFrame, "LabelTemplate" )
+	TempLabel:SetPoint("TOPLEFT", 20, -50 - ( ( VisualRow - 1 ) * 30 ) )
+	TempLabel:SetWidth( 50 * 6 )
+	TempLabel.text = TempLabel:CreateFontString( nil, "ARTWORK", "GameFontNormal" )
+	TempLabel.text:SetText( "Cast bar remaining seconds to start interrupt" )
+	TempLabel.text:SetAllPoints();
+	local TempEditBox = CreateFrame("EditBox", "EditBoxTemplateEdit", EditBoxFrame, "EditBoxTemplateEditB")
+	TempEditBox:SetPoint("TOPLEFT", 350, -50 - ( ( VisualRow - 1 ) * 30 ) )
+	TempEditBox.Col = 20
+	TempEditBox:SetWidth( 6 * 12 )
+	TempEditBox:SetMaxLetters( 6 )
 end
 
 function GetEditboxValue( Obj )
@@ -501,6 +534,8 @@ function GetEditboxValue( Obj )
 		end
 	elseif( Col == SPELL_NAME_INDEX and SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] ~= nil ) then
 		Obj:SetText( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] )
+	elseif( Col == 20 ) then
+		Obj:SetText( SpellNameTargetTypeKeyBinds[ 20 ] )
 	end
 end
 
@@ -511,6 +546,17 @@ function SetEditboxValue( Obj )
 		SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] = string.byte( Obj:GetText( ) )
 	elseif( Col == SPELL_NAME_INDEX ) then
 		SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] = Obj:GetText( )
+	elseif( Col == 20 ) then
+		SecondsUntilSpellCastEndToInterruptStart = tonumber( Obj:GetText( ) )
+		if( SecondsUntilSpellCastEndToInterruptStart < 0.1 ) then
+			SecondsUntilSpellCastEndToInterruptStart = 0.1
+		end
+		SpellNameTargetTypeKeyBinds[ 20 ] = SecondsUntilSpellCastEndToInterruptStart
+		SecondsUntilSpellCastEndToInterruptEnd = SecondsUntilSpellCastEndToInterruptStart * 30 / 100
+		if( SecondsUntilSpellCastEndToInterruptEnd < 0.05 ) then
+			SecondsUntilSpellCastEndToInterruptEnd = 0.05
+		end
+print(SecondsUntilSpellCastEndToInterruptEnd)		
 	end
 --	print( " val "..tostring( SpellNameTargetTypeKeyBinds[ 4 + 6 * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + 6 * 100 ] ) )
 --	print( "set ind "..Col.." row "..Row.." val "..tostring( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + Row * 100 ] ) )
@@ -526,5 +572,6 @@ function ResetEditBoxData()
 	EditBoxFrame:Hide()
 --	print( " val "..tostring( SpellNameTargetTypeKeyBinds[ 4 + 6 * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + 6 * 100 ] ) )
 	LoadDefaultSettings()
+	SpellNameTargetTypeKeyBinds[ 20 ] = SecondsUntilSpellCastEndToInterruptStartBackup
 --	print( " val "..tostring( SpellNameTargetTypeKeyBinds[ 4 + 6 * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + 6 * 100 ] ) )
 end

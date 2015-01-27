@@ -1,8 +1,8 @@
 ## Interface: 30000
 ## Title: KickBot
 ## Author: Tudi
-## Version: 1.0.1
-## Notes: Watch your target / focustarget and cast spells accordingly
+## Version: 4.0.1
+## Notes: Watch your target / focustarget / arenatarget and cast spells accordingly
 ## DefaultState: Enabled
 ## LoadOnDemand: 0
 ## SavedVariablesPerCharacter: SpellNameKeyBinds

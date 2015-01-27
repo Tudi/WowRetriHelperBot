@@ -2,6 +2,11 @@ Opt('MustDeclareVars', 1)
 
 ; this is required to not try to casts spells 1000 times per second while silenced :(
 global $MaxFPS = 4
+; Resend same key interval. In case of a latency spike, you get "spell not ready yet" than this will force AU3 to send the same key after ex 200ms
+global $ResendSameKeyInterval = 200
+; Due to latency, when wow client wants to do something, it takes time until server replies. Do not spam multiple interrupt spells due to latency
+; This is actually a bad setting. You might want to set it to 0. In my case i need it
+global $ForcedSpellCastCooldown = 200
 
 ; Keyboard shortcut to kill this script
 HotKeySet("[", "Terminate")
@@ -74,12 +79,17 @@ if( PixelGetColor( $LuaFramePosX, $LuaFramePosY ) <> $ExpectedLUAIdleValue ) the
 endif
 
 global $FrameHandleDuration = 1000 / $MaxFPS
+global $SendKey = ""
 
 ;MsgBox( $MB_SYSTEMMODAL, "", " but1 " & $KeyToAllowScriptToTakeActionsHex & " but 2 " & $KeyToAllowScriptToTakeActionsHex2 )
 
 local $PrevValue = 0
 ;loop until the end of days
 local $LastActionCheckStamp = _Date_Time_GetTickCount( )
+;monitor when we sent out last key
+local $LastForceSendStamp = _Date_Time_GetTickCount( )
+; monitor the interval of key spams
+local $LastKeySendStamp = _Date_Time_GetTickCount( )
 ; monitor that part of the screen and check if something changed. If it did, than we take actions 
 while( $ScriptIsRunning == 1 )
 	local $TickNow = _Date_Time_GetTickCount( )
@@ -106,6 +116,12 @@ while( $ScriptIsRunning == 1 )
 		$PrevValue = $LuaColor
 	endif
 	
+	; if for some reason "key" was lost ( ex : spell cooldown ) than resend the same key after X ms
+	if( $SendKey <> "" and $LastForceSendStamp + $ResendSameKeyInterval < $TickNow ) then
+		MySendKey( $SendKey )
+;		Send( "{ENTER}" & "resend " & $SendKey & " = " & asc( $SendKey ) & " {ENTER}" )	
+	endif
+	
 	;this is required to not overspam unusable actions
 	local $TickAtEnd = _Date_Time_GetTickCount( )
 	local $DeltaTime = $TickAtEnd - $TickNow
@@ -114,8 +130,25 @@ while( $ScriptIsRunning == 1 )
 	endif
 wend
 
+func MySendKey( $key )
+	local $TickNow = _Date_Time_GetTickCount( )
+	
+	; do not cast multiple interrupt spells because the private server did not yet sent us the interrupt cast packet. Wait a bit
+	if( $LastKeySendStamp + $ForcedSpellCastCooldown > $TickNow ) then
+		return
+	endif
+	
+	; send the key as expected to the client
+	if( WinActive( "World of Warcraft" ) ) then 
+		Send( $SendKey )
+	endif
+	
+	; we sent a key, no need to send it again for a while
+	$LastForceSendStamp = $TickNow
+endfunc
+
 func EventImageFound( $SpellNameIndex, $TargetIndex, $SendKeyFromLUA )
-	local $SendKey = ""
+	$SendKey = ""
 ;	Send( "{ENTER}" & "1 target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKeyFromLUA & " key " & chr( $SendKeyFromLUA ) & " {ENTER}" )	
 	if( $ScriptIsPaused <> 0 ) then
 		return
@@ -125,15 +158,15 @@ func EventImageFound( $SpellNameIndex, $TargetIndex, $SendKeyFromLUA )
 		return
 	endif
 
-	if( $SendKeyFromLUA <> 0 ) then
+	if( $SendKeyFromLUA <> 0 and $SendKeyFromLUA <> Mod( $ExpectedLUAIdleValue, 256 ) ) then
 		$SendKey = chr( $SendKeyFromLUA )
 	elseif( IsDeclared( "SendKeyForTargetTypeAndSpell" ) == 1 and $SendKeyForTargetTypeAndSpell[ $TargetIndex ][ $SpellNameIndex ] ) then
 		$SendKey = $SendKeyForTargetTypeAndSpell[ $TargetIndex ][ $SpellNameIndex ] 
 	endif
 	
 	if( $SendKey <> "" ) then
-		Send( $SendKey )
-;		Send( "{ENTER}" & "2 target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKey & " {ENTER}" )	
+		MySendKey( $SendKey )
+;		Send( "{ENTER}" & "2 target index " & $TargetIndex & " name index " & $SpellNameIndex & " key " & $SendKey & " keylua " & $SendKeyFromLUA & " {ENTER}" )	
 	endif
 endfunc
 
