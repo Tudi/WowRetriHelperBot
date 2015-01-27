@@ -144,6 +144,7 @@ func MySendKey( $key )
 	endif
 	
 	; we sent a key, no need to send it again for a while
+	$LastKeySendStamp = $TickNow
 	$LastForceSendStamp = $TickNow
 endfunc
 
