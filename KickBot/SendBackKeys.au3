@@ -131,6 +131,10 @@ while( $ScriptIsRunning == 1 )
 wend
 
 func MySendKey( $key )
+	if( $ScriptIsPaused <> 0 ) then
+		return
+	endif
+	
 	local $TickNow = _Date_Time_GetTickCount( )
 	
 	; do not cast multiple interrupt spells because the private server did not yet sent us the interrupt cast packet. Wait a bit
