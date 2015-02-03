@@ -3,10 +3,10 @@ Opt('MustDeclareVars', 1)
 ; this is required to not try to casts spells 1000 times per second while silenced :(
 global $MaxFPS = 4
 ; Resend same key interval. In case of a latency spike, you get "spell not ready yet" than this will force AU3 to send the same key after ex 200ms
-global $ResendSameKeyInterval = 200
+global $ResendSameKeyInterval = 500
 ; Due to latency, when wow client wants to do something, it takes time until server replies. Do not spam multiple interrupt spells due to latency
 ; This is actually a bad setting. You might want to set it to 0. In my case i need it
-global $ForcedSpellCastCooldown = 200
+global $ForcedSpellCastCooldown = 500
 
 ; Keyboard shortcut to kill this script
 HotKeySet("[", "Terminate")
@@ -76,6 +76,7 @@ endif
 ; Debugging. Can delete this
 if( PixelGetColor( $LuaFramePosX, $LuaFramePosY ) <> $ExpectedLUAIdleValue ) then
 	MsgBox( $MB_SYSTEMMODAL, "", "KickBot Lua frame has an unexpected value. Manually set $LuaFramePosX and $LuaFramePosY" )
+	exit
 endif
 
 global $FrameHandleDuration = 1000 / $MaxFPS

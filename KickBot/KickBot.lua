@@ -164,6 +164,7 @@ local function LoadDefaultSettings()
 	RegisterKickerSpell( "Mind Freeze", '8', '','','','', '', '', "DEATHKNIGHT" )
 	RegisterKickerSpell( "Strangulate", '9', '','','','', '', '', "DEATHKNIGHT" )
 	RegisterKickerSpell( "Death Grip", '0', '','','','', '', '', "DEATHKNIGHT" )
+	RegisterKickerSpell( "Dark Simulacrum", '-', '','','','', '', '', "DEATHKNIGHT" )
 
 	RegisterKickerSpell( "Bash", '8', '','','','', '', '', "DRUID" )
 	RegisterKickerSpell( "Skull Bash", '9', '','','','', '', '', "DRUID" )
@@ -460,13 +461,14 @@ end
 -- All the code below is the shit to make the editbox appear and work. Could bt trowh out if you ask me, but you gotto think about the noobs also
 ----------------------------------
 
+local StorageSystemVersion = 4
 local function BuildSpellNameKeyBindsFromListToSave()
 	SpellNameKeyBinds = SpellNameTargetTypeKeyBinds
-	SpellNameKeyBinds[999] = 3	-- storage system versions
+	SpellNameKeyBinds[999] = StorageSystemVersion
 end
 
 local function BuildSpellNameKeyBindsFromSaveToList()
-	if( SpellNameKeyBinds == nil or SpellNameKeyBinds[999] ~= 3 or SpellNameKeyBinds[23] == nil ) then
+	if( SpellNameKeyBinds == nil or SpellNameKeyBinds[999] ~= StorageSystemVersion or SpellNameKeyBinds[23] == nil ) then
 		BuildSpellNameKeyBindsFromListToSave()
 	end
 	
@@ -619,6 +621,10 @@ function SetEditboxValue( Obj )
 		SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] = string.byte( Obj:GetText( ) )
 	elseif( Col == SPELL_NAME_INDEX ) then
 		SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] = Obj:GetText( )
+		if( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] == tostring( tonumber( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] ) ) ) then
+			local name, rank, icon, castTime, minRange, maxRange = GetSpellInfo( tonumber( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] ) )
+			SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] = name
+		end
 	elseif( Col == 20 ) then
 		SecondsUntilSpellCastEndToInterruptStart = tonumber( Obj:GetText( ) )
 		if( SecondsUntilSpellCastEndToInterruptStart < 0.1 ) then
