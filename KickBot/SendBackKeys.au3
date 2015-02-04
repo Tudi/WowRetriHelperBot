@@ -19,30 +19,6 @@ global $RGBStep = 4
 global $FirstValidRGB = 1 * $RGBStep
 global $ExpectedLUAIdleValue = 0x0010FF80
 
-#comments-start
-global $SendKeyForTargetTypeAndSpell[7][20]
-; ! This list is optional and only used  if there is no keybind specified in LUA. If there is no keybind for a specific spell than nothing will happen :)
-; You might want to use AU3 to specify the key because you can not use for example {f9} in LUA
-; you can find key values here : https://www.autoitscript.com/autoit3/docs/appendix/SendKeys.htm
-; the list of spell names is in the same order as in KickBot.lua. KickBot.lua will send us the index to this vector.
-$SendKeyForTargetTypeAndSpell[0][0] = "9"		;Fist of Justice
-$SendKeyForTargetTypeAndSpell[0][1] = "9"		;Hammer of Justice
-$SendKeyForTargetTypeAndSpell[0][2] = "8"		;Rebuke
-$SendKeyForTargetTypeAndSpell[0][3] = "0"		;Arcane Torrent
-$SendKeyForTargetTypeAndSpell[0][4] = "9"		;Counterspell
-$SendKeyForTargetTypeAndSpell[0][5] = "9"		;Wind Shear
-$SendKeyForTargetTypeAndSpell[0][6] = "9"		;Kick
-$SendKeyForTargetTypeAndSpell[0][7] = "9"		;Counter Shot
-$SendKeyForTargetTypeAndSpell[0][8] = "9"		;Pummel
-$SendKeyForTargetTypeAndSpell[0][9] = "9"		;Spear Hand Strike
-$SendKeyForTargetTypeAndSpell[0][10] = "9"		;Mind Freeze
-$SendKeyForTargetTypeAndSpell[0][11] = "9"		;Strangulate
-; List is very similar, we only send different key for the spell as you will probably be using a macro like : /cast @focustarget Rebuke
-$SendKeyForTargetTypeAndSpell[1][0] = "-"		;Fist of Justice
-; target any arena1-arena5 players
-$SendKeyForTargetTypeAndSpell[2][0] = "{f9}"
-#comments-end
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Anything below should be working without any changes. If not.....it's bad
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -145,7 +121,13 @@ func MySendKey( $key )
 	
 	; send the key as expected to the client
 	if( WinActive( "World of Warcraft" ) ) then 
-		Send( $SendKey )
+		; you could script send key if you are using UTF-8 character keyboard. That ? you might see below is a cyrilic character
+		; I never tested this code, but according to autoit documentation it should be something similar
+;		if( $key == '?' ) then 
+;			ControlSend( "World of Warcraft", "", "", "this is my UTF-8 char override" )
+;		else
+			Send( $key )
+;		endif
 	endif
 	
 	; we sent a key, no need to send it again for a while
@@ -166,8 +148,6 @@ func EventImageFound( $SpellNameIndex, $TargetIndex, $SendKeyFromLUA )
 
 	if( $SendKeyFromLUA <> 0 and $SendKeyFromLUA <> Mod( $ExpectedLUAIdleValue, 256 ) ) then
 		$SendKey = chr( $SendKeyFromLUA )
-	elseif( IsDeclared( "SendKeyForTargetTypeAndSpell" ) == 1 and $SendKeyForTargetTypeAndSpell[ $TargetIndex ][ $SpellNameIndex ] ) then
-		$SendKey = $SendKeyForTargetTypeAndSpell[ $TargetIndex ][ $SpellNameIndex ] 
 	endif
 	
 	if( $SendKey <> "" ) then

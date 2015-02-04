@@ -5,7 +5,7 @@ This project has 2 components :
 Install :
 - copy files into ?????\World of Warcraft\Interface\AddOns\KickBot\
 - make sure you have the "KickBot" addon enabled
-- Optional : rename :kickbot to something else. rainbowdash ? Replace file names and all strings....
+- Optional : rename :kickbot to something else. You can use GenerateRandomAddonName.au3 to generate a somewhat random name for the addon
 
 Setup :
 - log ingame
