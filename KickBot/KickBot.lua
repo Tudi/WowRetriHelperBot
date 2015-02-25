@@ -362,8 +362,9 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 --			print( InterruptSpellsStartAt.." "..InterruptSpellsEndAt )
 			for N=InterruptSpellsStartAt,InterruptSpellsEndAt,1 do
 				local NextSpellName = SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + N * 100 ];
+				local KeyBindToPress = SpellNameTargetTypeKeyBinds[ N * 100 + TargetTypeIndex ];
 --				print( N.." "..NextSpellName )
-				if( NextSpellName ~= nil ) then
+				if( NextSpellName ~= nil and KeyBindToPress ~= nil ) then
 					local usable, nomana = IsUsableSpell( NextSpellName )
 					local inRange = IsSpellInRange( NextSpellName, unit )
 --					local inRange2 = UnitInRange( unit )	--40 yards range check, should be the same as spell in range, only that AOE spells have radius and not range
