@@ -63,7 +63,9 @@ NumberOfCounterAuras = NumberOfCounterAuras + 1
 -- bad ex : only interrupt Exorcism if target has Holy Avenger ( this doubles the damage of Exorcism )
 local ConditionalInterruptsList = {}
 --ConditionalInterruptsList["Fireball"] = "Arcane Brilliance,Arcane Missiles!" -- i'm debugging the script, chill
-
+-- list of spells that you wish to interrupt as soon as possible without any latency or cast bar conditioning
+local InterruptAsSoonAsPossibleTargetSpells = ""
+--local InterruptAsSoonAsPossibleTargetSpells = "Fireball"	-- just debugging, ignore this line
 ---------------------------------------------------------------
 -- End of config section
 ---------------------------------------------------------------
@@ -264,6 +266,16 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 		return
 	end
 	
+	-- we can not interrupt this spell
+	if( spell and InterruptDeny == true ) then
+		return
+	end
+	
+	-- we can not interrupt this spell
+	if( cspell and cInterruptDeny == true ) then
+		return
+	end
+	
 	-- whatever spell it is, we just use the name of it
 	local SpellName = spell
 	if( SpellName == nil ) then 
@@ -308,9 +320,15 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 	end
 	
 	-- channeled spells should be interrupted as soon as possible.
-	if( cspell ) then
+	if( cspell and cInterruptDeny == false ) then
 		RemainingSecondsToFinishCast = SecondsUntilSpellCastEndToInterruptStart
 --		 print("channeling : "..cspell.." cstartTime "..tostring(cstartTime).." cendTime "..tostring(cendTime).." cInterruptDeny "..tostring(cInterruptDeny).." RemainingSecondsToFinishCast "..tostring(RemainingSecondsToFinishCast)..".");
+	end
+	
+	-- we wish to interrupt this spell as soon as it gets started. Exceptional cases when for some reason the channeling check fails
+	if( string.find( InterruptAsSoonAsPossibleTargetSpells, "("..SpellName..")" ) ~= nil ) then
+		RemainingSecondsToFinishCast = SecondsUntilSpellCastEndToInterruptStart
+--		print("spell "..SpellName.." is marked to be interrupted asp "..RemainingSecondsToFinishCast.." <= "..SecondsUntilSpellCastEndToInterruptStart.." and "..RemainingSecondsToFinishCast.." >= "..SecondsUntilSpellCastEndToInterruptEnd  )
 	end
 	
 	-- Optional : Only interrupt spells if target is burst casting. They trinket + talent proc than cast biggest dmg spell....
@@ -453,7 +471,7 @@ function KickBot_onUpdate( )
 	elseif( AdviseNextBestActionPQR( ) == 1 ) then	-- this is not used, it's only put here as demo for people who want to use the bot for DPS / class specific scripts also
 		return
 	else
-		SignalBestAction( 0 )
+		SignalBestAction( 0, 0 )
 	end
 end
 
@@ -634,6 +652,10 @@ function SetEditboxValue( Obj )
 		SecondsUntilSpellCastEndToInterruptEnd = SecondsUntilSpellCastEndToInterruptStart * 30 / 100
 		if( SecondsUntilSpellCastEndToInterruptEnd < 0.05 ) then
 			SecondsUntilSpellCastEndToInterruptEnd = 0.05
+		end
+		-- this should never happen
+		if( SecondsUntilSpellCastEndToInterruptStart < SecondsUntilSpellCastEndToInterruptEnd ) then
+			SecondsUntilSpellCastEndToInterruptStart = SecondsUntilSpellCastEndToInterruptEnd
 		end
 --print(SecondsUntilSpellCastEndToInterruptEnd)		
 	elseif( Col == 21 ) then
