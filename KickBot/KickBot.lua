@@ -3,6 +3,7 @@
 -- if you have low ingame latency, you can try to put this number as low as 0.5 seconds. That means that the enemy cast bar will be almost full when kickbot will try to interrupt it.
 -- You can edit this value in GUI. Saved values will override this setting
 local SecondsUntilSpellCastEndToInterruptStart = 1.5	-- put as small as possible to catch all interruptable spells. Needs to be larger than SecondsUntilSpellCastEndToInterruptEnd
+local SecondsChanneledSpellCastStartToInterruptStart = 0.5	-- number of seconds that need to pass since a channeled spell started casting
 -- Short explanation : put this value larger than your ingame latency spikes
 -- Long explanation : If target is casting a 1 second cast bar spell. You have 0.75 second lag. You will notice him casting, but there is no point for you to try to interrupt it as your cast will arrive to late to the server. Your target already casted the spell
 -- If you put this value too small you might see kickbock try to interrupt a spell that was already casted by the target
@@ -108,6 +109,7 @@ local SecondsUntilSpellCastEndToInterruptStartBackup = SecondsUntilSpellCastEndT
 local SpellNamesCanInterruptOnPlayersBackup = SpellNamesCanInterruptOnPlayers
 local SpellNamesCanNotInterruptBackup = SpellNamesCanNotInterrupt
 local OnlyInterruptOnBurstBackup = OnlyInterruptOnBurst
+local SecondsChanneledSpellCastStartToInterruptStartBackup = SecondsChanneledSpellCastStartToInterruptStart
 
 local function LoadDefaultSettings()
 
@@ -200,6 +202,8 @@ local function LoadDefaultSettings()
 	SpellNameTargetTypeKeyBinds[ 23 ] = OnlyInterruptOnBurstBackup
 	OnlyInterruptOnBurst = OnlyInterruptOnBurstBackup
 	
+	SpellNameTargetTypeKeyBinds[ 24 ] = SecondsChanneledSpellCastStartToInterruptStart
+	SecondsChanneledSpellCastStartToInterruptStart = SecondsChanneledSpellCastStartToInterruptStartBackup
 end
 LoadDefaultSettings()
 
@@ -321,8 +325,12 @@ local function AdviseNextBestActionInterrupt( TargetTypeIndex )
 	
 	-- channeled spells should be interrupted as soon as possible.
 	if( cspell and cInterruptDeny == false ) then
-		RemainingSecondsToFinishCast = SecondsUntilSpellCastEndToInterruptStart
---		 print("channeling : "..cspell.." cstartTime "..tostring(cstartTime).." cendTime "..tostring(cendTime).." cInterruptDeny "..tostring(cInterruptDeny).." RemainingSecondsToFinishCast "..tostring(RemainingSecondsToFinishCast)..".");
+		SecondsSinceStartedCasting = GetTime() - cstartTime / 1000
+--		print( "channeling : "..cspell.." seconds passed "..SecondsSinceStartedCasting );
+		if( SecondsSinceStartedCasting >= SecondsChanneledSpellCastStartToInterruptStart ) then
+			RemainingSecondsToFinishCast = SecondsUntilSpellCastEndToInterruptStart
+		end
+--		 print( "channeling : "..cspell.." cstartTime "..tostring(cstartTime).." cendTime "..tostring(cendTime).." cInterruptDeny "..tostring(cInterruptDeny).." RemainingSecondsToFinishCast "..tostring(RemainingSecondsToFinishCast)..".");
 	end
 	
 	-- we wish to interrupt this spell as soon as it gets started. Exceptional cases when for some reason the channeling check fails
@@ -487,7 +495,7 @@ local function BuildSpellNameKeyBindsFromListToSave()
 end
 
 local function BuildSpellNameKeyBindsFromSaveToList()
-	if( SpellNameKeyBinds == nil or SpellNameKeyBinds[999] ~= StorageSystemVersion or SpellNameKeyBinds[23] == nil ) then
+	if( SpellNameKeyBinds == nil or SpellNameKeyBinds[999] ~= StorageSystemVersion or SpellNameKeyBinds[24] == nil ) then
 		BuildSpellNameKeyBindsFromListToSave()
 	end
 	
@@ -495,6 +503,7 @@ local function BuildSpellNameKeyBindsFromSaveToList()
 	SpellNameTargetTypeKeyBinds[ 21 ] = SpellNamesCanInterruptOnPlayers
 	SpellNameTargetTypeKeyBinds[ 22 ] = SpellNamesCanNotInterrupt
 	SpellNameTargetTypeKeyBinds[ 23 ] = OnlyInterruptOnBurst
+	SpellNameTargetTypeKeyBinds[ 24 ] = SecondsChanneledSpellCastStartToInterruptStart
 	
 	SpellNameTargetTypeKeyBinds = SpellNameKeyBinds
 end
@@ -557,11 +566,25 @@ function EditForm_OnLoad( Obj )
     TempLabel.text:SetJustifyH("LEFT")
 	TempLabel.text:SetAllPoints();
 	local TempEditBox = CreateFrame("EditBox", "EditBoxTemplateEdit", EditBoxFrame, "EditBoxTemplateEditB")
-	TempEditBox:SetPoint("TOPLEFT", 300, -50 - ( ( VisualRow - 1 ) * 30 ) )
+	TempEditBox:SetPoint("TOPLEFT", 400, -50 - ( ( VisualRow - 1 ) * 30 ) )
 	TempEditBox.Col = 20
 	TempEditBox:SetWidth( 6 * 12 )
 	TempEditBox:SetMaxLetters( 6 )
 
+	VisualRow = VisualRow + 1
+	local TempLabel = CreateFrame( "frame", "LabelTemplateCastbarChanneled", EditBoxFrame, "LabelTemplate" )
+	TempLabel:SetPoint("TOPLEFT", 20, -50 - ( ( VisualRow - 1 ) * 30 ) )
+	TempLabel:SetWidth( 80 * 6 )
+	TempLabel.text = TempLabel:CreateFontString( nil, "ARTWORK", "GameFontNormal" )
+	TempLabel.text:SetText( "Seconds of castbar to interrupt channeled spell" )
+    TempLabel.text:SetJustifyH("LEFT")
+	TempLabel.text:SetAllPoints();
+	local TempEditBox = CreateFrame("EditBox", "EditBoxTemplateEditChannelstart", EditBoxFrame, "EditBoxTemplateEditB")
+	TempEditBox:SetPoint("TOPLEFT", 400, -50 - ( ( VisualRow - 1 ) * 30 ) )
+	TempEditBox.Col = 24
+	TempEditBox:SetWidth( 6 * 12 )
+	TempEditBox:SetMaxLetters( 6 )
+	
 	VisualRow = VisualRow + 1
 	local TempLabel = CreateFrame( "frame", "LabelTemplateWhiteList", EditBoxFrame, "LabelTemplate" )
 	TempLabel:SetPoint("TOPLEFT", 20, -50 - ( ( VisualRow - 1 ) * 30 ) )
@@ -612,6 +635,7 @@ function EditForm_OnLoad( Obj )
 	TempLabel.text:SetText( "Only interrupt if casted spell is buffed(edit 'ConditionalInterrupts' in kickbot.lua)" )
     TempLabel.text:SetJustifyH("LEFT")
 	TempLabel.text:SetAllPoints();
+
 end
 
 function GetEditboxValue( Obj )
@@ -628,7 +652,7 @@ function GetEditboxValue( Obj )
 		end
 	elseif( Col == SPELL_NAME_INDEX and SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] ~= nil ) then
 		Obj:SetText( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] )
-	elseif( Col >= 20 and Col <= 23 ) then
+	elseif( Col >= 20 and Col <= 24 ) then
 		Obj:SetText( SpellNameTargetTypeKeyBinds[ Col ] )
 	end
 end
@@ -674,6 +698,12 @@ function SetEditboxValue( Obj )
 	elseif( Col == 23 ) then
 		OnlyInterruptOnBurst = tonumber( Obj:GetText( ) )
 		SpellNameTargetTypeKeyBinds[ 23 ] = OnlyInterruptOnBurst
+	elseif( Col == 24 ) then
+		SecondsChanneledSpellCastStartToInterruptStart = tonumber( Obj:GetText( ) )
+		if( SecondsChanneledSpellCastStartToInterruptStart < 0 ) then 
+			SecondsChanneledSpellCastStartToInterruptStart = 0
+		end
+		SpellNameTargetTypeKeyBinds[ 24 ] = SecondsChanneledSpellCastStartToInterruptStart
 	end
 --	print( " val "..tostring( SpellNameTargetTypeKeyBinds[ 4 + 6 * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + 6 * 100 ] ) )
 --	print( "set ind "..Col.." row "..Row.." val "..tostring( SpellNameTargetTypeKeyBinds[ Col + Row * 100 ] ).." "..tostring( SpellNameTargetTypeKeyBinds[ SPELL_NAME_INDEX + Row * 100 ] ) )
